@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Container,
   Box,
@@ -29,7 +30,6 @@ type AgentType = {
 const MANDATORY_ATTRIBUTES = ['health', 'speed'];
 
 const AgentConfig: React.FC = () => {
-  // Initial state for attributes includes mandatory ones.
   const [agentTypes, setAgentTypes] = useState<AgentType[]>([]);
   const [editingAgent, setEditingAgent] = useState<AgentType | null>(null);
   const [name, setName] = useState('');
@@ -271,4 +271,4 @@ const AgentConfig: React.FC = () => {
   );
 };
 
-export default AgentConfig;
+export default dynamic(() => Promise.resolve(AgentConfig), { ssr: false });
