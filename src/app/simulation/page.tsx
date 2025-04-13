@@ -1,26 +1,43 @@
-"use client"
+"use client";
 
-import Head from "next/head";
-import dynamic from "next/dynamic";
+import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Container, Typography } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import AgentConfigForm, { AgentType } from '../components/AgentConfigForm';
+import ConfigurationManager from '../components/ConfigurationManager';
 
+const theme = createTheme({
+  colorSchemes: {
+    dark: true,
+  },
+});
 
-const AppWithoutSSR = dynamic(() => import("./app"), { ssr: false });
-const NatsSubscriber = dynamic(() => import("./NatsSubscriber"), { ssr: false });
+const Page: React.FC = () => {
+  // Lift the agents state in the parent component
+  const [agentTypes, setAgentTypes] = useState<AgentType[]>([]);
 
-export default function Home() {
-    return (
-        <>
-            <Head>
-                <title>Phaser Nextjs Template</title>
-                <meta name="description" content="A Phaser 3 Next.js project template that demonstrates Next.js with React communication and uses Vite for bundling." />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <link rel="icon" href="/favicon.png" />
-            </Head>
-            <main>
-                <NatsSubscriber/>
-                <AppWithoutSSR />
-            </main>
-        </>
-    );
-}
+  console.log("Page component agentTypes:", agentTypes);
 
+  return (
+    <ThemeProvider theme={theme}>
+      <Container maxWidth="lg">
+        <Typography variant="h4" align="center" gutterBottom>
+          Simulation Configuration
+        </Typography>
+        {/* Agent configuration form with state lifted from parent */}
+        <AgentConfigForm agents={agentTypes} setAgents={setAgentTypes} />
+        {/* Configuration manager: pass currentAgents and a callback to update agent list on load */}
+        <ConfigurationManager
+          currentAgents={agentTypes}
+          onLoad={(loadedAgents: AgentType[]) => {
+            console.log("Parent received loaded agents:", loadedAgents);
+            setAgentTypes(loadedAgents);
+          }}
+        />
+      </Container>
+    </ThemeProvider>
+  );
+};
+
+export default dynamic(() => Promise.resolve(Page), { ssr: false });
