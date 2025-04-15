@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   wsconnect, // Funktion zum Herstellen einer Verbindung zu einem NATS-Server
@@ -28,7 +28,15 @@ export default function NatsSubscriber() {
         const sub = nc.subscribe("simulation.>");
         (async () => {
           for await (const m of sub) {
-            EventBus.emit("message", m); 
+            EventBus.emit("message", m);
+          }
+          console.log("subscription closed");
+        })();
+
+        const worldSub = nc.subscribe("simulation.*.world");
+        (async () => {
+          for await (const m of worldSub) {
+            EventBus.emit("worldMessage", m);
           }
           console.log("subscription closed");
         })();
