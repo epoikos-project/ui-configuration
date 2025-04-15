@@ -41,3 +41,4 @@ const Page: React.FC = () => {
 };
 
 export default dynamic(() => Promise.resolve(Page), { ssr: false });
+// This will ensure that the component is only rendered on the client side
