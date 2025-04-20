@@ -5,6 +5,9 @@ import { Box, Button, TextField, Typography, Paper } from "@mui/material";
 
 import type { AgentType } from "./AgentConfigForm";
 
+/**
+ * Slice of state kept in Page for world settings
+ */
 export type WorldConfigState = {
   size: [number, number];
   num_regions: number;
@@ -15,7 +18,9 @@ type Props = {
   agents: AgentType[];
   setAgents: (a: AgentType[]) => void;
   world: WorldConfigState;
-  // optional: let users tweak the world JSON too
+  /**
+   * Optional – if supplied, the user can paste new world settings in JSON
+   */
   setWorld?: (w: WorldConfigState) => void;
 };
 
@@ -25,28 +30,36 @@ const LiveJsonEditor: React.FC<Props> = ({
   world,
   setWorld,
 }) => {
-  const composeJson = () => ({ agents, settings: { world } });
+  /** Shape that mirrors what /configuration expects (minus id & name) */
+  const compose = () => ({ agents, settings: { world } });
 
-  const [jsonText, setJsonText] = useState(() =>
-    JSON.stringify(composeJson(), null, 2)
+  const [jsonText, setJsonText] = useState(
+    JSON.stringify(compose(), null, 2)
   );
   const [error, setError] = useState<string | null>(null);
 
-  // Whenever either slice of state changes, regenerate JSON
+  /* keep preview in sync whenever state changes */
   useEffect(() => {
-    setJsonText(JSON.stringify(composeJson(), null, 2));
+    setJsonText(JSON.stringify(compose(), null, 2));
   }, [agents, world]);
-  
+
   const handleApply = () => {
     try {
       const parsed = JSON.parse(jsonText);
+
+      // Accept either the full object or just agents[]
       const newAgents = Array.isArray(parsed) ? parsed : parsed.agents;
-      if (!Array.isArray(newAgents)) throw new Error("No agents[] found");
+      if (!Array.isArray(newAgents)) throw new Error("No agents[] array found");
       setAgents(newAgents);
 
-      if (!Array.isArray(parsed) && parsed.settings?.world && setWorld) {
+      if (
+        !Array.isArray(parsed) &&
+        parsed.settings?.world &&
+        setWorld !== undefined
+      ) {
         setWorld(parsed.settings.world as WorldConfigState);
       }
+
       setError(null);
     } catch (e: any) {
       setError(e.message || "Invalid JSON");
@@ -73,7 +86,7 @@ const LiveJsonEditor: React.FC<Props> = ({
         </Typography>
       )}
 
-      <Box display="flex" justifyContent="center" mt={2}>
+      <Box mt={2} display="flex" justifyContent="center">
         <Button variant="contained" onClick={handleApply}>
           Apply JSON
         </Button>
