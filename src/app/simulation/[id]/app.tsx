@@ -1,22 +1,47 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
+import { Simulation } from "@/types/Simulation";
+import { World } from "@/types/World";
+import { Agent } from "@/types/Agent";
+import { Button, FormControlLabel, Switch } from "@mui/material";
 
-interface IProps {
-  world_config: {
-    world_data: {
-      size_x: number;
-      size_y: number;
-    };
-  };
+export interface SimProps {
+  world: World;
+  simulation: Simulation;
+  agents: Agent[];
 }
-function App({ world_config }: IProps) {
+function App(props: SimProps) {
   //  References to the PhaserGame component (game and scene are exposed)
   const phaserRef = useRef<IRefPhaserGame | null>(null);
+  const [debugEnabled, setDebugEnabled] = useState(false);
 
   return (
     <div id="app">
-      <PhaserSimulation ref={phaserRef} world_config={world_config} />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={debugEnabled}
+            onChange={() => {
+              if (!debugEnabled) {
+                phaserRef.current.scene.enableDebug();
+              } else {
+                phaserRef.current.scene.disableDebug();
+              }
+              setDebugEnabled(!debugEnabled);
+            }}
+          />
+        }
+        label="Debug Mode"
+      />
+      <Button
+        onClick={() => {
+          phaserRef.current.scene.resetCamera();
+        }}
+      >
+        Reset Camera
+      </Button>
+      <PhaserSimulation ref={phaserRef} {...props} />
     </div>
   );
 }

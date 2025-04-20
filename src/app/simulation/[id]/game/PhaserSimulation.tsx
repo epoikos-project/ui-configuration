@@ -1,25 +1,24 @@
+import { useNats } from "@/app/hooks/useNats";
+import { useSubscribe } from "@/app/hooks/useSubscibe";
 import { forwardRef, useEffect, useLayoutEffect, useRef } from "react";
-import StartGame from "./main";
+import { SimProps } from "../app";
 import { EventBus } from "./EventBus";
+import StartGame from "./main";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
   scene: Phaser.Scene | null;
 }
 
-interface IProps {
+export interface IProps extends SimProps {
   currentActiveScene?: (scene_instance: Phaser.Scene) => void;
-  world_config: {
-    world_data: {
-      size_x: number;
-      size_y: number;
-    };
-  };
 }
 
 export const PhaserSimulation = forwardRef<IRefPhaserGame, IProps>(
-  function PhaserGame({ currentActiveScene, world_config }, ref) {
+  function PhaserGame({ currentActiveScene, ...props }, ref) {
     const game = useRef<Phaser.Game | null>(null!);
+    const subscribe = useSubscribe();
+    const nats = useNats();
 
     useLayoutEffect(() => {
       if (game.current === null) {
@@ -44,15 +43,15 @@ export const PhaserSimulation = forwardRef<IRefPhaserGame, IProps>(
 
     useEffect(() => {
       EventBus.on("preloading startet", (scene_instance: Phaser.Scene) => {
-        scene_instance.data.set("world_config", world_config);
+        scene_instance.data.set("props", props);
+        scene_instance.data.set("nats", nats);
+        scene_instance.data.set("subscribe", subscribe);
       });
 
       EventBus.on("current-scene-ready", (scene_instance: Phaser.Scene) => {
         if (currentActiveScene && typeof currentActiveScene === "function") {
           currentActiveScene(scene_instance);
         }
-
-        scene_instance.data.set("world_config", world_config);
 
         if (typeof ref === "function") {
           ref({ game: game.current, scene: scene_instance });
@@ -66,5 +65,5 @@ export const PhaserSimulation = forwardRef<IRefPhaserGame, IProps>(
     }, [currentActiveScene, ref]);
 
     return <div id="game-container"></div>;
-  }
+  },
 );

@@ -1,5 +1,6 @@
 import Head from "next/head";
 
+import { Agent } from "@/types/Agent";
 import Wrapper from "./wrapper";
 
 export default async function Home({
@@ -11,8 +12,13 @@ export default async function Home({
 
   const data = await fetch(`http://localhost:8000/simulation/${id}`);
   const worldData = await fetch(`http://localhost:8000/simulation/${id}/world`);
+  const agentsData = await fetch(
+    `http://localhost:8000/simulation/${id}/agent`,
+  );
   const sim = await data.json();
   const world = await worldData.json();
+  const agents: Agent[] = await agentsData.json();
+
   return (
     <>
       <Head>
@@ -25,7 +31,7 @@ export default async function Home({
         <link rel="icon" href="/favicon.png" />
       </Head>
       <main>
-        <Wrapper world={world} sim={sim} />
+        <Wrapper world={world.world_data} simulation={sim} agents={agents} />
       </main>
     </>
   );
