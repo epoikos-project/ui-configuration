@@ -23,22 +23,42 @@ export type AgentType = {
   count: number;
   traits: string[];
   attributes: { name: string; value: number }[];
+  model?: string;
+  personality?: string[];
+  objective?: string;
+};
+
+export type WorldConfigType = {
+  size: [number, number];
+  num_regions: number;
+  total_resources: number;
 };
 
 export type Configuration = {
   id: string;
   name: string;
   agents: AgentType[];
-  settings: { [key: string]: any };
+  settings: { 
+    world?: WorldConfigType;
+    [key: string]: unknown;
+  };
 };
 
 type Props = {
   currentAgents: AgentType[];
-  onLoad: (agents: AgentType[]) => void;
+  currentWorldConfig: WorldConfigType;
+  configName: string;
+  setConfigName: (name: string) => void;
+  onLoad: (config: Configuration) => void;
 };
 
-const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
-  const [configName, setConfigName] = useState('');
+const ConfigurationManager: React.FC<Props> = ({
+  currentAgents,
+  currentWorldConfig,
+  configName,
+  setConfigName,
+  onLoad
+}) => {
   const [loadStatus, setLoadStatus] = useState('');
   const [configList, setConfigList] = useState<Configuration[]>([]);
 
@@ -68,12 +88,13 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
       return;
     }
     try {
-      // Use currentAgents so the payload contains agent data.
       const payload: Configuration = {
         id: Date.now().toString(),
         name: configName,
         agents: currentAgents,
-        settings: {},
+        settings: {
+          world: currentWorldConfig
+        },
       };
 
       console.log("Saving configuration with payload:", payload);
@@ -84,7 +105,7 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
       });
       const data = await response.json();
       console.log("Save response:", data);
-      setLoadStatus(data.message);
+      setLoadStatus(data.message || "Configuration saved successfully!");
       fetchConfigurations();
     } catch (error) {
       console.error("Error saving configuration:", error);
@@ -103,13 +124,17 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
       }
       const data = await response.json();
       console.log("Loaded configuration data:", data);
-      if (data.agents) {
-        setLoadStatus(`Configuration '${name}' loaded successfully.`);
-        onLoad(data.agents);
-        setConfigName(name);
-      } else {
-        setLoadStatus("Invalid configuration data");
-      }
+      
+      // This ensures we properly handle both old and new configuration formats
+      const config: Configuration = {
+        id: data.id || Date.now().toString(),
+        name: data.name,
+        agents: data.agents || [],
+        settings: data.settings || {}
+      };
+      
+      setLoadStatus(`Configuration '${name}' loaded successfully.`);
+      onLoad(config);
     } catch (error) {
       console.error("Error loading configuration:", error);
       setLoadStatus("Error loading configuration");
@@ -124,7 +149,7 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
       });
       const data = await response.json();
       console.log("Deletion response:", data);
-      setLoadStatus(data.message);
+      setLoadStatus(data.message || "Configuration deleted successfully!");
       fetchConfigurations();
     } catch (error) {
       console.error("Error deleting configuration:", error);
@@ -143,6 +168,7 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
           value={configName}
           onChange={(e) => setConfigName(e.target.value)}
           variant="outlined"
+          fullWidth
         />
       </Box>
       {loadStatus && (
@@ -169,6 +195,8 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
             <TableRow>
               <TableCell>ID</TableCell>
               <TableCell>Name</TableCell>
+              <TableCell>Agents</TableCell>
+              <TableCell>World Size</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -177,6 +205,12 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
               <TableRow key={config.id}>
                 <TableCell>{config.id}</TableCell>
                 <TableCell>{config.name}</TableCell>
+                <TableCell>{config.agents?.length || 0} types</TableCell>
+                <TableCell>
+                  {config.settings?.world?.size 
+                    ? `${config.settings.world.size[0]}x${config.settings.world.size[1]}`
+                    : 'Not defined'}
+                </TableCell>
                 <TableCell align="center">
                   <Button
                     variant="outlined"
@@ -199,7 +233,7 @@ const ConfigurationManager: React.FC<Props> = ({ currentAgents, onLoad }) => {
             ))}
             {configList.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} align="center">
+                <TableCell colSpan={5} align="center">
                   No configurations available.
                 </TableCell>
               </TableRow>
