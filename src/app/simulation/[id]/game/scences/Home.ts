@@ -1,0 +1,264 @@
+import { Agent } from "@/types/Agent";
+import { Simulation } from "@/types/Simulation";
+import { World } from "@/types/World";
+import GridEngine, {
+  CollisionStrategy,
+  Direction,
+  GridEngineConfig,
+} from "grid-engine";
+import { Scene } from "phaser";
+
+import { SubscribeFunction } from "@/app/hooks/useSubscribe";
+import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
+import { AgentPlacedMessage } from "@/types/messages/world/AgentPlacedMessage";
+import { Msg } from "@nats-io/nats-core";
+import assert from "assert";
+import { SimProps } from "../../app";
+import { EventBus } from "../EventBus";
+
+export class Home extends Scene {
+  camera!: Phaser.Cameras.Scene2D.Camera;
+  background!: Phaser.GameObjects.Image;
+  gameText!: Phaser.GameObjects.Text;
+
+  tilemap!: Phaser.Tilemaps.Tilemap;
+
+  simulation!: Simulation;
+  world!: World;
+  agents!: { agent: Agent; sprite: Phaser.GameObjects.Sprite }[];
+  subscribe!: SubscribeFunction<Home>;
+
+  private gridEngine!: GridEngine;
+  playerSprite!: Phaser.GameObjects.Sprite;
+
+  debugGraphics!: Phaser.GameObjects.Graphics;
+
+  cameraIsFollowingSprite = false;
+
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+
+  constructor() {
+    super("Home");
+  }
+
+  enableDebug() {
+    this.debugGraphics = this.add.graphics();
+    this.tilemap.renderDebug(this.debugGraphics);
+  }
+
+  disableDebug() {
+    this.debugGraphics.destroy();
+  }
+
+  agentCreateHandler(message: Msg) {
+    const agent = message.json<AgentPlacedMessage>();
+    console.log("Agent created:", agent.id);
+    this.createCharacter(
+      agent.id,
+      agent.name,
+      agent.location[0],
+      agent.location[1],
+    );
+  }
+
+  agentMoveHandler(message: Msg) {
+    const agent = message.json<AgentMovedMessage>();
+    console.log("Agent moved:", agent.id);
+    this.gridEngine.moveTo(agent.id, {
+      x: agent.location[0],
+      y: agent.location[1],
+    });
+  }
+
+  createCharacter(id: string, name: string, x: number, y: number) {
+    const agentSprite = this.createSprite(name);
+    this.gridEngine.addCharacter({
+      id: id,
+      sprite: agentSprite,
+      walkingAnimationMapping: 0,
+      startPosition: { x: x, y: y },
+      collides: true,
+    });
+    return agentSprite;
+  }
+
+  resetCamera() {
+    this.cameraIsFollowingSprite = false;
+    this.cameras.main.stopFollow();
+    this.cameras.main.centerOn(
+      0.5 * (this.game.config.width as number),
+      0.5 * (this.game.config.height as number),
+    );
+  }
+
+  createSprite(name: string) {
+    const agentSprite = this.add.sprite(0, 0, "fluffy");
+    agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
+    agentSprite.setInteractive();
+    agentSprite.name = name;
+    agentSprite.on("pointermove", () => {
+      const text = this.add.text(
+        agentSprite.x - 15,
+        agentSprite.y - 15,
+        agentSprite.name,
+      );
+      agentSprite.on("pointerout", () => {
+        text.destroy();
+      });
+    });
+
+    agentSprite.on("pointerdown", () => {
+      this.cameras.main.startFollow(agentSprite, true);
+      this.cameraIsFollowingSprite = true;
+    });
+    return agentSprite;
+  }
+
+  worldToGridPosition(x: number, y: number) {
+    return {
+      x: Math.floor(x / this.tilemap.tileWidth),
+      y: Math.floor(y / this.tilemap.tileHeight),
+    };
+  }
+
+  init(data: { props: SimProps; subscribe: SubscribeFunction<Home> }) {
+    const { world, agents, simulation } = data.props;
+    this.world = world;
+    this.simulation = simulation;
+    this.agents = agents.map((agent) => ({
+      agent,
+      sprite: this.createSprite(agent.name),
+    }));
+    this.subscribe = data.subscribe;
+  }
+
+  create() {
+    console.log(this.world);
+    const tiles = [7, 7, 7, 6, 6, 6, 0, 0, 0, 1, 1, 2, 3, 4, 5];
+    const mapData = [];
+
+    for (let y = 0; y < this.world.size_y; y++) {
+      const row = [];
+
+      for (let x = 0; x < this.world.size_x; x++) {
+        //  Scatter the tiles so we get more mud and less stones
+        let tileIndex = 0;
+        if (
+          this.world.resource_coords.findIndex(
+            (value) => value[0] === x && value[1] === y,
+          ) !== -1
+        ) {
+          // Debug log removed to avoid unintended console output in production.
+          tileIndex = 8;
+        } else {
+          tileIndex = Phaser.Math.RND.weightedPick(tiles);
+        }
+
+        row.push(tileIndex);
+      }
+
+      mapData.push(row);
+    }
+
+    this.tilemap = this.make.tilemap({
+      data: mapData,
+      tileWidth: 16,
+      tileHeight: 16,
+    });
+
+    const tileset = this.tilemap.addTilesetImage("tiles");
+    const wallTileset = this.tilemap.addTilesetImage(
+      "wall",
+      "wall",
+      16,
+      32,
+      0,
+      0,
+      8,
+    );
+
+    assert(tileset);
+    assert(wallTileset);
+
+    this.tilemap.createLayer(0, [tileset, wallTileset], 0, 0);
+
+    this.tilemap.layer.data.forEach((row) =>
+      row.forEach((tile) => {
+        if (tile.index === 8) {
+          tile.properties = { ge_collide: true };
+          tile.setCollision(true);
+        }
+      }),
+    );
+
+    this.playerSprite = this.add.sprite(0, 0, "fluffy");
+    this.cameras.main.centerOn(
+      0.5 * (this.game.config.width as number),
+      0.5 * (this.game.config.height as number),
+    );
+    const gridEngineConfig: GridEngineConfig = {
+      characters: this.agents.map((a) => ({
+        id: a.agent.id,
+        sprite: a.sprite,
+        startPosition: { x: a.agent.x_coord, y: a.agent.y_coord },
+        walkingAnimationMapping: 0,
+        collides: true,
+      })),
+      characterCollisionStrategy: CollisionStrategy.BLOCK_ONE_TILE_AHEAD,
+      layerOverlay: true,
+    };
+    this.gridEngine.create(this.tilemap, gridEngineConfig);
+    this.gridEngine.addCharacter({
+      id: "fluffy",
+      sprite: this.playerSprite,
+      walkingAnimationMapping: 0,
+      startPosition: { x: 15, y: 15 },
+      collides: {
+        collidesWithTiles: true,
+        ignoreMissingTiles: false,
+      },
+    });
+
+    this.gridEngine
+      .steppedOn(["fluffy"], [{ x: 15, y: 15 }])
+      .subscribe((char) => {
+        console.log("stepped on", char.charId);
+        this.gridEngine.stopMovement(char.charId);
+      });
+
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      this.cursors = keyboard.createCursorKeys()!;
+    }
+
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.placed`,
+      this.agentCreateHandler,
+      this,
+    );
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.moved`,
+      this.agentMoveHandler,
+      this,
+    );
+
+    EventBus.emit("current-scene-ready", this);
+  }
+
+  update() {
+    if (this.cursors) {
+      if (this.cursors.left.isDown) {
+        this.gridEngine.move("fluffy", Direction.LEFT);
+      } else if (this.cursors.right.isDown) {
+        this.gridEngine.move("fluffy", Direction.RIGHT);
+      } else if (this.cursors.up.isDown) {
+        this.gridEngine.move("fluffy", Direction.UP);
+      } else if (this.cursors.down.isDown) {
+        this.gridEngine.move("fluffy", Direction.DOWN);
+      }
+    }
+  }
+  changeScene() {
+    this.scene.start("GameOver");
+  }
+}
