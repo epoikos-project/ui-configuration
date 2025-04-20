@@ -17,7 +17,7 @@ export default function Wrapper(props: SimProps) {
           <h1>Simulation: {simulation.id}</h1>
 
           <h2>Running: {simulation.running.toString()} </h2>
-
+          <h3>Current Tick: {simulation.tick}</h3>
           <h3>
             World Size: {world.size_x} x {world.size_y}
           </h3>

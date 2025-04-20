@@ -93,6 +93,7 @@ export class Home extends Scene {
 
   createSprite(name: string) {
     const agentSprite = this.add.sprite(0, 0, "fluffy");
+    agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
     agentSprite.setInteractive();
     agentSprite.name = name;
     agentSprite.on("pointermove", () => {
