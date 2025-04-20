@@ -35,6 +35,8 @@ export class Home extends Scene {
 
   cameraIsFollowingSprite = false;
 
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+
   constructor() {
     super("Home");
   }
@@ -223,6 +225,11 @@ export class Home extends Scene {
         this.gridEngine.stopMovement(char.charId);
       });
 
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      this.cursors = keyboard.createCursorKeys()!;
+    }
+
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.placed`,
       this.agentCreateHandler,
@@ -238,17 +245,14 @@ export class Home extends Scene {
   }
 
   update() {
-    const keyboard = this.input.keyboard;
-    if (keyboard) {
-      const cursors = keyboard.createCursorKeys()!;
-
-      if (cursors.left.isDown) {
+    if (this.cursors) {
+      if (this.cursors.left.isDown) {
         this.gridEngine.move("fluffy", Direction.LEFT);
-      } else if (cursors.right.isDown) {
+      } else if (this.cursors.right.isDown) {
         this.gridEngine.move("fluffy", Direction.RIGHT);
-      } else if (cursors.up.isDown) {
+      } else if (this.cursors.up.isDown) {
         this.gridEngine.move("fluffy", Direction.UP);
-      } else if (cursors.down.isDown) {
+      } else if (this.cursors.down.isDown) {
         this.gridEngine.move("fluffy", Direction.DOWN);
       }
     }
