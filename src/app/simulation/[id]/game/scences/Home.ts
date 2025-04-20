@@ -1,44 +1,42 @@
+import { Agent } from "@/types/Agent";
+import { Simulation } from "@/types/Simulation";
+import { World } from "@/types/World";
 import GridEngine, {
   CollisionStrategy,
   Direction,
   GridEngineConfig,
 } from "grid-engine";
 import { Scene } from "phaser";
-import { EventBus } from "../EventBus";
-import { MsgHandler, SubscribeFunction } from "../../../../hooks/useSubscibe";
-import { World } from "@/types/World";
-import { Data } from "../Data";
-import { Agent } from "@/types/Agent";
+
+import { SubscribeFunction } from "@/app/hooks/useSubscribe";
+import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
+import { AgentPlacedMessage } from "@/types/messages/world/AgentPlacedMessage";
+import { Msg } from "@nats-io/nats-core";
+import assert from "assert";
 import { SimProps } from "../../app";
+import { EventBus } from "../EventBus";
 
 export class Home extends Scene {
-  camera: Phaser.Cameras.Scene2D.Camera;
-  background: Phaser.GameObjects.Image;
-  gameText: Phaser.GameObjects.Text;
+  camera!: Phaser.Cameras.Scene2D.Camera;
+  background!: Phaser.GameObjects.Image;
+  gameText!: Phaser.GameObjects.Text;
 
-  tilemap: Phaser.Tilemaps.Tilemap;
+  tilemap!: Phaser.Tilemaps.Tilemap;
 
-  world: World;
-  agents: { agent: Agent; sprite: Phaser.GameObjects.Sprite }[];
-  subscribe: SubscribeFunction;
+  simulation!: Simulation;
+  world!: World;
+  agents!: { agent: Agent; sprite: Phaser.GameObjects.Sprite }[];
+  subscribe!: SubscribeFunction<Home>;
 
   private gridEngine!: GridEngine;
-  playerSprite: Phaser.GameObjects.Sprite;
+  playerSprite!: Phaser.GameObjects.Sprite;
 
-  debugGraphics: Phaser.GameObjects.Graphics;
+  debugGraphics!: Phaser.GameObjects.Graphics;
 
   cameraIsFollowingSprite = false;
 
   constructor() {
     super("Home");
-  }
-
-  messageHandler(message: any) {
-    console.log("Message from NATS:", message.json().content);
-    this.gridEngine.moveRandomly("fluffy");
-    setTimeout(() => {
-      this.gridEngine.stopMovement("fluffy");
-    }, 2000);
   }
 
   enableDebug() {
@@ -50,8 +48,8 @@ export class Home extends Scene {
     this.debugGraphics.destroy();
   }
 
-  agentCreateHandler(message: any) {
-    const agent = message.json();
+  agentCreateHandler(message: Msg) {
+    const agent = message.json<AgentPlacedMessage>();
     console.log("Agent created:", agent.id);
     this.createCharacter(
       agent.id,
@@ -61,8 +59,8 @@ export class Home extends Scene {
     );
   }
 
-  agentMoveHandler(message: any) {
-    const agent = message.json();
+  agentMoveHandler(message: Msg) {
+    const agent = message.json<AgentMovedMessage>();
     console.log("Agent moved:", agent.id);
     this.gridEngine.moveTo(agent.id, {
       x: agent.location[0],
@@ -86,8 +84,8 @@ export class Home extends Scene {
     this.cameraIsFollowingSprite = false;
     this.cameras.main.stopFollow();
     this.cameras.main.centerOn(
-      0.5 * this.game.config.width,
-      0.5 * this.game.config.height,
+      0.5 * (this.game.config.width as number),
+      0.5 * (this.game.config.height as number),
     );
   }
 
@@ -113,16 +111,17 @@ export class Home extends Scene {
     return agentSprite;
   }
 
-  worldToGridPoistion(x: number, y: number) {
+  worldToGridPosition(x: number, y: number) {
     return {
       x: Math.floor(x / this.tilemap.tileWidth),
       y: Math.floor(y / this.tilemap.tileHeight),
     };
   }
 
-  init(data: { props: SimProps; subscribe: SubscribeFunction }) {
-    const { world, agents } = data.props;
+  init(data: { props: SimProps; subscribe: SubscribeFunction<Home> }) {
+    const { world, agents, simulation } = data.props;
     this.world = world;
+    this.simulation = simulation;
     this.agents = agents.map((agent) => ({
       agent,
       sprite: this.createSprite(agent.name),
@@ -175,6 +174,9 @@ export class Home extends Scene {
       8,
     );
 
+    assert(tileset);
+    assert(wallTileset);
+
     this.tilemap.createLayer(0, [tileset, wallTileset], 0, 0);
 
     this.tilemap.layer.data.forEach((row) =>
@@ -188,8 +190,8 @@ export class Home extends Scene {
 
     this.playerSprite = this.add.sprite(0, 0, "fluffy");
     this.cameras.main.centerOn(
-      0.5 * this.game.config.width,
-      0.5 * this.game.config.height,
+      0.5 * (this.game.config.width as number),
+      0.5 * (this.game.config.height as number),
     );
     const gridEngineConfig: GridEngineConfig = {
       characters: this.agents.map((a) => ({
@@ -221,27 +223,34 @@ export class Home extends Scene {
         this.gridEngine.stopMovement(char.charId);
       });
 
-    this.subscribe("simulation.>", this.messageHandler, this);
     this.subscribe(
-      "simulation.*.agent.*.placed",
+      `simulation.${this.simulation.id}.agent.*.placed`,
       this.agentCreateHandler,
       this,
     );
-    this.subscribe("simulation.*.agent.*.moved", this.agentMoveHandler, this);
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.moved`,
+      this.agentMoveHandler,
+      this,
+    );
 
     EventBus.emit("current-scene-ready", this);
   }
 
   update() {
-    const cursors = this.input.keyboard?.createCursorKeys()!;
-    if (cursors.left.isDown) {
-      this.gridEngine.move("fluffy", Direction.LEFT);
-    } else if (cursors.right.isDown) {
-      this.gridEngine.move("fluffy", Direction.RIGHT);
-    } else if (cursors.up.isDown) {
-      this.gridEngine.move("fluffy", Direction.UP);
-    } else if (cursors.down.isDown) {
-      this.gridEngine.move("fluffy", Direction.DOWN);
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      const cursors = keyboard.createCursorKeys()!;
+
+      if (cursors.left.isDown) {
+        this.gridEngine.move("fluffy", Direction.LEFT);
+      } else if (cursors.right.isDown) {
+        this.gridEngine.move("fluffy", Direction.RIGHT);
+      } else if (cursors.up.isDown) {
+        this.gridEngine.move("fluffy", Direction.UP);
+      } else if (cursors.down.isDown) {
+        this.gridEngine.move("fluffy", Direction.DOWN);
+      }
     }
   }
   changeScene() {

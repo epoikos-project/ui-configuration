@@ -1,13 +1,13 @@
 import { useNats } from "@/app/hooks/useNats";
-import { useSubscribe } from "@/app/hooks/useSubscibe";
+import { useSubscribe } from "@/app/hooks/useSubscribe";
 import { forwardRef, useEffect, useLayoutEffect, useRef } from "react";
 import { SimProps } from "../app";
 import { EventBus } from "./EventBus";
 import StartGame from "./main";
 
-export interface IRefPhaserGame {
+export interface IRefPhaserGame<S = Phaser.Scene> {
   game: Phaser.Game | null;
-  scene: Phaser.Scene | null;
+  scene: S | null;
 }
 
 export interface IProps extends SimProps {
@@ -42,7 +42,7 @@ export const PhaserSimulation = forwardRef<IRefPhaserGame, IProps>(
     }, [ref]);
 
     useEffect(() => {
-      EventBus.on("preloading startet", (scene_instance: Phaser.Scene) => {
+      EventBus.on("preloading-started", (scene_instance: Phaser.Scene) => {
         scene_instance.data.set("props", props);
         scene_instance.data.set("nats", nats);
         scene_instance.data.set("subscribe", subscribe);
@@ -62,7 +62,7 @@ export const PhaserSimulation = forwardRef<IRefPhaserGame, IProps>(
       return () => {
         EventBus.removeListener("current-scene-ready");
       };
-    }, [currentActiveScene, ref]);
+    }, [currentActiveScene, ref, nats, props, subscribe]);
 
     return <div id="game-container"></div>;
   },

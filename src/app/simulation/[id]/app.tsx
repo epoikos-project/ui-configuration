@@ -5,6 +5,7 @@ import { Simulation } from "@/types/Simulation";
 import { World } from "@/types/World";
 import { Agent } from "@/types/Agent";
 import { Button, FormControlLabel, Switch } from "@mui/material";
+import { Home } from "./game/scences/Home";
 
 export interface SimProps {
   world: World;
@@ -13,7 +14,7 @@ export interface SimProps {
 }
 function App(props: SimProps) {
   //  References to the PhaserGame component (game and scene are exposed)
-  const phaserRef = useRef<IRefPhaserGame | null>(null);
+  const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
 
   return (
@@ -24,9 +25,9 @@ function App(props: SimProps) {
             checked={debugEnabled}
             onChange={() => {
               if (!debugEnabled) {
-                phaserRef.current.scene.enableDebug();
+                phaserRef.current!.scene!.enableDebug();
               } else {
-                phaserRef.current.scene.disableDebug();
+                phaserRef.current!.scene!.disableDebug();
               }
               setDebugEnabled(!debugEnabled);
             }}
@@ -36,7 +37,7 @@ function App(props: SimProps) {
       />
       <Button
         onClick={() => {
-          phaserRef.current.scene.resetCamera();
+          phaserRef.current!.scene!.resetCamera();
         }}
       >
         Reset Camera
