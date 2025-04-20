@@ -1,4 +1,3 @@
-// components/LiveJsonEditor.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -26,8 +25,6 @@ const LiveJsonEditor: React.FC<Props> = ({
   world,
   setWorld,
 }) => {
-  /** A single object that matches what `saveUnifiedConfiguration`
-   *  ultimately POSTs to the backend (minus name/id). */
   const composeJson = () => ({ agents, settings: { world } });
 
   const [jsonText, setJsonText] = useState(() =>
@@ -39,16 +36,10 @@ const LiveJsonEditor: React.FC<Props> = ({
   useEffect(() => {
     setJsonText(JSON.stringify(composeJson(), null, 2));
   }, [agents, world]);
-
-  /** Apply button – lets power users paste in only the `agents`
-   *  array OR the full object. World config is optional on parse. */
+  
   const handleApply = () => {
     try {
       const parsed = JSON.parse(jsonText);
-
-      // Accept both shapes:
-      //  1) { agents: [...], settings: { world: {...} } }
-      //  2)  [ ...agentsArray ]
       const newAgents = Array.isArray(parsed) ? parsed : parsed.agents;
       if (!Array.isArray(newAgents)) throw new Error("No agents[] found");
       setAgents(newAgents);
