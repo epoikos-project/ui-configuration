@@ -1,31 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from "react";
 import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Divider,
-} from '@mui/material';
-import { Edit, FileCopy, Delete } from '@mui/icons-material';
+  Box, Button, TextField, Typography, Paper, List,
+  ListItem, ListItemText, IconButton, Divider, Select, MenuItem
+} from "@mui/material";
+import { Edit, FileCopy, Delete } from "@mui/icons-material";
 
-export type Attribute = { name: string; value: number };
+type Attribute = { name: string; value: number };
 
 export type AgentType = {
   id: number;
   name: string;
   count: number;
-  traits: string[];
+  model?: string;
+  personality?: string[];
+  objective?: string;
   attributes: Attribute[];
 };
 
-const MANDATORY_ATTRIBUTES = ['health', 'speed'];
+const MANDATORY: readonly string[] = ["hunger"];
 
 type Props = {
   agents: AgentType[];
@@ -33,224 +27,181 @@ type Props = {
 };
 
 const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
-  const [editingAgent, setEditingAgent] = useState<AgentType | null>(null);
-  const [name, setName] = useState('');
+  const [editing, setEditing] = useState<AgentType | null>(null);
+  const [name, setName] = useState("");
   const [count, setCount] = useState(1);
-  const [traits, setTraits] = useState<string[]>(['']);
+  const [model, setModel] = useState("");
+  const [objective, setObjective] = useState("");
+  const [personality, setPersonality] = useState<string[]>([""]);
   const [attributes, setAttributes] = useState<Attribute[]>(
-    MANDATORY_ATTRIBUTES.map(attr => ({ name: attr, value: 0 }))
+    MANDATORY.map((n) => ({ name: n, value: 0 }))
   );
   const [errors, setErrors] = useState<string[]>([]);
 
-  // When agents prop changes (for example via loading a configuration),
-  // prefill the form with data from the first agent (if any)
-  useEffect(() => {
-    console.log("AgentConfigForm received agents prop:", agents);
-    if (agents.length > 0) {
-      const agent = agents[0];
-      setName(agent.name);
-      setCount(agent.count);
-      setTraits(agent.traits);
-      setAttributes(agent.attributes);
-      setEditingAgent(agent);
-    } else {
-      resetForm();
-    }
-  }, [agents]);
-
-  const resetForm = () => {
-    setName('');
+  const reset = () => {
+    setEditing(null);
+    setName("");
     setCount(1);
-    setTraits(['']);
-    setAttributes(MANDATORY_ATTRIBUTES.map(attr => ({ name: attr, value: 0 })));
-    setEditingAgent(null);
+    setModel("");
+    setObjective("");
+    setPersonality([""]);
+    setAttributes(MANDATORY.map((n) => ({ name: n, value: 0 })));
     setErrors([]);
   };
 
-  const validateAgent = (agent: AgentType): string[] => {
-    const errs: string[] = [];
-    if (!agent.name.trim()) errs.push("Name is required.");
-    MANDATORY_ATTRIBUTES.forEach(requiredAttr => {
-      if (!agent.attributes.some(attr => attr.name === requiredAttr)) {
-        errs.push(`Missing mandatory attribute: ${requiredAttr}`);
-      }
-    });
-    return errs;
+  const handleEdit = (a: AgentType) => {
+    setEditing(a);
+    setName(a.name);
+    setCount(a.count);
+    setModel(a.model ?? "");
+    setObjective(a.objective ?? "");
+    setPersonality(a.personality ?? [""]);
+    setAttributes(a.attributes);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validate = (a: AgentType) => {
+    const e: string[] = [];
+    if (!a.name.trim()) e.push("Name required");
+    MANDATORY.forEach((m) => {
+      if (!a.attributes.some((at) => at.name === m)) e.push(`Missing ${m}`);
+    });
+    return e;
+  };
+
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newAgent: AgentType = {
-      id: editingAgent ? editingAgent.id : Date.now(),
+    const next: AgentType = {
+      id: editing ? editing.id : Date.now(),
       name,
       count,
-      traits,
+      model: model || undefined,
+      objective: objective || undefined,
+      personality: personality.filter((p) => p.trim()),
       attributes,
     };
-    const validationErrors = validateAgent(newAgent);
-    if (validationErrors.length > 0) {
-      setErrors(validationErrors);
+    const errs = validate(next);
+    if (errs.length) {
+      setErrors(errs);
       return;
     }
-    if (editingAgent) {
-      setAgents(agents.map(agent => (agent.id === editingAgent.id ? newAgent : agent)));
-    } else {
-      setAgents([...agents, newAgent]);
-    }
-    resetForm();
+    setAgents(
+      editing ? agents.map((a) => (a.id === next.id ? next : a)) : [...agents, next]
+    );
+    reset();
   };
 
-  const handleEdit = (agent: AgentType) => {
-    setEditingAgent(agent);
-    setName(agent.name);
-    setCount(agent.count);
-    setTraits(agent.traits);
-    setAttributes(agent.attributes);
-    setErrors([]);
-  };
-
-  const handleCopy = (agent: AgentType) => {
-    const copiedAgent: AgentType = {
-      ...agent,
-      id: Date.now(),
-      name: agent.name + ' (Copy)',
-    };
-    setAgents([...agents, copiedAgent]);
-  };
-
-  const handleDelete = (id: number) => {
-    setAgents(agents.filter(agent => agent.id !== id));
-  };
-
-  const handleTraitChange = (index: number, value: string) => {
-    const updatedTraits = [...traits];
-    updatedTraits[index] = value;
-    setTraits(updatedTraits);
-  };
-
-  const addTrait = () => setTraits([...traits, '']);
-  const removeTrait = (index: number) => setTraits(traits.filter((_, i) => i !== index));
-
-  const handleAttributeNameChange = (index: number, value: string) => {
-    const updatedAttributes = [...attributes];
-    updatedAttributes[index].name = value;
-    setAttributes(updatedAttributes);
-  };
-
-  const handleAttributeValueChange = (index: number, value: number) => {
-    const updatedAttributes = [...attributes];
-    updatedAttributes[index].value = value;
-    setAttributes(updatedAttributes);
-  };
-
-  const addAttribute = () => setAttributes([...attributes, { name: '', value: 0 }]);
-  const removeAttribute = (index: number) => {
-    if (MANDATORY_ATTRIBUTES.includes(attributes[index].name)) return;
-    setAttributes(attributes.filter((_, i) => i !== index));
-  };
+  const changeAttrName = (i: number, v: string) =>
+    setAttributes((a) => {
+      const x = [...a];
+      x[i].name = v;
+      return x;
+    });
+  const changeAttrVal = (i: number, v: number) =>
+    setAttributes((a) => {
+      const x = [...a];
+      x[i].value = v;
+      return x;
+    });
 
   return (
     <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
-      <Typography variant="h6" gutterBottom>
-        {editingAgent ? 'Edit Agent Type' : 'Add Agent Type'}
+      <Typography variant="h6">
+        {editing ? "Edit Agent Type" : "Add Agent Type"}
       </Typography>
+
       {errors.length > 0 && (
         <Box mb={2}>
-          {errors.map((error, idx) => (
+          {errors.map((e, idx) => (
             <Typography key={idx} color="error">
-              {error}
+              {e}
             </Typography>
           ))}
         </Box>
       )}
-      <form onSubmit={handleSubmit}>
-        <TextField
-          fullWidth
-          label="Agent Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          margin="normal"
-          required
-        />
-        <TextField
-          fullWidth
-          label="Count"
-          type="number"
-          value={count}
-          onChange={(e) => setCount(parseInt(e.target.value) || 1)}
-          margin="normal"
-        />
+
+      <form onSubmit={submit}>
+        <TextField fullWidth required margin="normal" label="Agent Name" value={name}
+          onChange={(e) => setName(e.target.value)} />
+        <TextField fullWidth margin="normal" label="Count" type="number" value={count}
+          onChange={(e) => setCount(parseInt(e.target.value) || 1)} />
         <Box mt={2}>
-          <Typography variant="subtitle1">Traits</Typography>
-          {traits.map((trait, index) => (
-            <Box key={index} display="flex" alignItems="center" gap={1} mt={1}>
-              <TextField
-                fullWidth
-                label={`Trait ${index + 1}`}
-                value={trait}
-                onChange={(e) => handleTraitChange(index, e.target.value)}
-              />
-              <Button variant="outlined" color="error" onClick={() => removeTrait(index)}>
+          <Typography variant="subtitle1">Model</Typography>
+          <Select fullWidth value={model}
+            onChange={(e) => setModel(e.target.value as string)}>
+            <MenuItem value="llama-3.1-8b-instruct">llama-3.1-8b-instruct</MenuItem>
+            <MenuItem value="llama-3.3-70b-instruct">llama-3.3-70b-instruct</MenuItem>
+          </Select>
+        </Box>
+        <TextField fullWidth margin="normal" label="Objective" value={objective}
+          onChange={(e) => setObjective(e.target.value)} />
+
+        <Box mt={2}>
+          <Typography variant="subtitle1">Personality</Typography>
+          {personality.map((p, i) => (
+            <Box key={i} display="flex" gap={1} mt={1}>
+              <TextField fullWidth label={`Trait ${i + 1}`} value={p}
+                onChange={(e) =>
+                  setPersonality((ps) =>
+                    ps.map((t, idx) => (idx === i ? e.target.value : t))
+                  )
+                } />
+              <Button variant="outlined" color="error"
+                onClick={() => setPersonality((ps) => ps.filter((_, idx) => idx !== i))}>
                 Remove
               </Button>
             </Box>
           ))}
-          <Button variant="contained" onClick={addTrait} sx={{ mt: 1 }}>
+          <Button variant="contained" sx={{ mt: 1 }}
+            onClick={() => setPersonality((ps) => [...ps, ""])}>
             Add Trait
           </Button>
         </Box>
+
         <Box mt={2}>
           <Typography variant="subtitle1">Attributes</Typography>
-          {attributes.map((attr, index) => (
-            <Box key={index} display="flex" alignItems="center" gap={1} mt={1}>
-              <TextField
-                fullWidth
-                label="Attribute Name"
-                value={attr.name}
-                onChange={(e) => handleAttributeNameChange(index, e.target.value)}
-                disabled={MANDATORY_ATTRIBUTES.includes(attr.name)}
-              />
-              <TextField
-                label="Value"
-                type="number"
-                value={attr.value}
-                onChange={(e) =>
-                  handleAttributeValueChange(index, parseInt(e.target.value) || 0)
-                }
-              />
-              {!MANDATORY_ATTRIBUTES.includes(attr.name) && (
-                <Button variant="outlined" color="error" onClick={() => removeAttribute(index)}>
+          {attributes.map((attr, i) => (
+            <Box key={i} display="flex" gap={1} mt={1}>
+              <TextField fullWidth label="Name" value={attr.name}
+                disabled={MANDATORY.includes(attr.name)}
+                onChange={(e) => changeAttrName(i, e.target.value)} />
+              <TextField label="Value" type="number" value={attr.value}
+                onChange={(e) => changeAttrVal(i, parseInt(e.target.value) || 0)} />
+              {!MANDATORY.includes(attr.name) && (
+                <Button variant="outlined" color="error"
+                  onClick={() => setAttributes((a) => a.filter((_, idx) => idx !== i))}>
                   Remove
                 </Button>
               )}
             </Box>
           ))}
-          <Button variant="contained" onClick={addAttribute} sx={{ mt: 1 }}>
+          <Button variant="contained" sx={{ mt: 1 }}
+            onClick={() => setAttributes((a) => [...a, { name: "", value: 0 }])}>
             Add Attribute
           </Button>
         </Box>
+
         <Box mt={2} display="flex" justifyContent="space-between">
-          <Button variant="outlined" onClick={resetForm}>
-            Reset
-          </Button>
+          <Button variant="outlined" onClick={reset}>Reset</Button>
           <Button variant="contained" type="submit">
-            {editingAgent ? 'Update Agent' : 'Add Agent'}
+            {editing ? "Update Agent" : "Add Agent"}
           </Button>
         </Box>
+
         <Box mt={2}>
           <Typography variant="h6">Agent Types List</Typography>
           <List>
-            {agents.map((agent) => (
-              <div key={agent.id}>
+            {agents.map((a) => (
+              <div key={a.id}>
                 <ListItem>
-                  <ListItemText primary={`${agent.count}x ${agent.name}`} />
-                  <IconButton onClick={() => handleEdit(agent)}>
+                  <ListItemText primary={`${a.count}x ${a.name}`} />
+                  <IconButton onClick={() => handleEdit(a)}>
                     <Edit />
                   </IconButton>
-                  <IconButton onClick={() => handleCopy(agent)}>
+                  <IconButton onClick={() =>
+                    setAgents([...agents, { ...a, id: Date.now(), name: `${a.name} (Copy)` }])}>
                     <FileCopy />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(agent.id)}>
+                  <IconButton onClick={() => setAgents(agents.filter((x) => x.id !== a.id))}>
                     <Delete />
                   </IconButton>
                 </ListItem>

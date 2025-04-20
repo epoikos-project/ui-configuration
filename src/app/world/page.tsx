@@ -196,7 +196,7 @@ const WorldPage: React.FC = () => {
         {/* Table of available worlds */}
         <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
           <Typography variant="h5" align="center" gutterBottom>
-            Available Worlds for Simulation "{simulationId || 'N/A'}"
+            Available Worlds for Simulation &quot;{simulationId || 'N/A'}&quot;
           </Typography>
           <Box display="flex" justifyContent="center" mb={2}>
             <Button variant="contained" onClick={fetchWorlds}>
