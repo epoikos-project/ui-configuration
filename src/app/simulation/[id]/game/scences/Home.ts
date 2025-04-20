@@ -145,7 +145,7 @@ export class Home extends Scene {
             (value) => value[0] === x && value[1] === y,
           ) !== -1
         ) {
-          console.log(x, y);
+          // Debug log removed to avoid unintended console output in production.
           tileIndex = 8;
         } else {
           tileIndex = Phaser.Math.RND.weightedPick(tiles);
