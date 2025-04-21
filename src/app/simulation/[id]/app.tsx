@@ -5,6 +5,7 @@ import { Simulation } from "@/types/Simulation";
 import { World } from "@/types/World";
 import { Agent } from "@/types/Agent";
 import {
+  Box,
   Button,
   Card,
   FormControlLabel,
@@ -19,6 +20,7 @@ import { EventBus } from "./game/EventBus";
 import { SimulationInfo } from "@/app/components/SimulationInfo";
 import { useAgents } from "@/app/hooks/useAgents";
 import { AgentProvider } from "@/app/provider/AgentProvider";
+import { startSimulation, stopSimulation } from "./actions";
 
 export interface SimProps {
   world: World;
@@ -46,7 +48,7 @@ function App(props: SimProps) {
   }, [agents]);
 
   return (
-    <div id="app">
+    <Box id="app" sx={{ ml: 5 }}>
       <SimulationInfo {...props} />
       <FormControlLabel
         control={
@@ -72,7 +74,7 @@ function App(props: SimProps) {
         Reset Camera
       </Button>
       <Grid container columns={2} spacing={2}>
-        <Grid sx={{ ml: 3 }}>
+        <Grid>
           <PhaserSimulation ref={phaserRef} {...props} />
         </Grid>
         <Grid>
@@ -85,7 +87,28 @@ function App(props: SimProps) {
           )}
         </Grid>
       </Grid>
-    </div>
+      <Box sx={{ mt: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            startSimulation(props.simulation.id);
+          }}
+        >
+          Start Simulation
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={() => {
+            stopSimulation(props.simulation.id);
+          }}
+          sx={{ ml: 2 }}
+        >
+          Stop Simulation
+        </Button>
+      </Box>
+    </Box>
   );
 }
 

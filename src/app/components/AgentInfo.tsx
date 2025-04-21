@@ -2,6 +2,7 @@
 
 import { Paper, Typography } from "@mui/material";
 import { useAgent } from "../hooks/useAgent";
+import { RelationshipGraph } from "./RelationshipGraph";
 
 export function AgentInfo() {
   const { agent } = useAgent();
@@ -34,6 +35,7 @@ export function AgentInfo() {
       </Typography>
       <hr style={{ marginTop: 5, marginBottom: 5 }} />
       <Typography variant="h6">Relationships:</Typography>
+      <RelationshipGraph />
     </Paper>
   );
 }
