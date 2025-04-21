@@ -6,7 +6,6 @@ import { RelationshipGraph } from "./RelationshipGraph";
 
 export function AgentInfo() {
   const { agent } = useAgent();
-  console.log(agent);
   return (
     <Paper
       elevation={3}

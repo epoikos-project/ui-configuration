@@ -165,7 +165,6 @@ export class Home extends Scene {
   }
 
   create() {
-    console.log(this.world);
     const tiles = [7, 7, 7, 6, 6, 6, 0, 0, 0, 1, 1, 2, 3, 4, 5];
     const mapData = [];
 
