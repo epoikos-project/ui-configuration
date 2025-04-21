@@ -1,26 +1,17 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
-import { Simulation } from "@/types/Simulation";
-import { World } from "@/types/World";
-import { Agent } from "@/types/Agent";
-import {
-  Box,
-  Button,
-  Card,
-  FormControlLabel,
-  Grid,
-  Paper,
-  Switch,
-  Typography,
-} from "@mui/material";
-import { Home } from "./game/scences/Home";
 import { AgentInfo } from "@/app/components/AgentInfo";
-import { EventBus } from "./game/EventBus";
 import { SimulationInfo } from "@/app/components/SimulationInfo";
 import { useAgents } from "@/app/hooks/useAgents";
 import { AgentProvider } from "@/app/provider/AgentProvider";
+import { Agent } from "@/types/Agent";
+import { Simulation } from "@/types/Simulation";
+import { World } from "@/types/World";
+import { Box, Button, FormControlLabel, Grid, Switch } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 import { startSimulation, stopSimulation } from "./actions";
+import { EventBus } from "./game/EventBus";
+import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
+import { Home } from "./game/scences/Home";
 
 export interface SimProps {
   world: World;
@@ -45,7 +36,7 @@ function App(props: SimProps) {
     return () => {
       EventBus.removeListener("agent-selected", listener);
     };
-  }, [agents]);
+  }, [agents, setSelectedAgent]);
 
   return (
     <Box id="app" sx={{ ml: 5 }}>

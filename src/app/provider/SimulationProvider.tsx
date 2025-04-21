@@ -1,5 +1,5 @@
 import { Simulation } from "@/types/Simulation";
-import { createContext, JSX, useState } from "react";
+import { createContext, JSX, useEffect, useState } from "react";
 import { useSubscription } from "../hooks/useSubscription";
 
 export const SimulationContext = createContext<{
@@ -18,6 +18,10 @@ export function SimulationProvider({
   simulation: Simulation;
 }): JSX.Element {
   const [sim, setSim] = useState<Simulation>(simulation);
+
+  useEffect(() => {
+    setSim(simulation);
+  }, [simulation]);
 
   useSubscription(`simulation.${simulation.id}.tick`, (msg) => {
     const data: { tick: number } = msg.json();

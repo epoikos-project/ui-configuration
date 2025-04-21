@@ -1,5 +1,5 @@
 import { Agent } from "@/types/Agent";
-import { createContext, JSX, useState } from "react";
+import { createContext, JSX, useEffect, useState } from "react";
 import { useSimulation } from "../hooks/useSimulation";
 import { useSubscription } from "../hooks/useSubscription";
 import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
@@ -22,6 +22,10 @@ export function AgentProvider({
   const [ag, setAgent] = useState<Agent>(agent);
 
   const { simulation } = useSimulation();
+
+  useEffect(() => {
+    setAgent(agent);
+  }, [agent]);
 
   useSubscription(
     `simulation.${simulation.id}.agent.${agent.id}.moved`,

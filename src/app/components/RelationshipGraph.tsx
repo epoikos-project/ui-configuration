@@ -13,7 +13,7 @@ export function RelationshipGraph() {
   const { agent } = useAgent();
   const initialNodes = [
     { id: agent.id, position: { x: 75, y: 75 }, data: { label: agent.name } },
-    { id: "2", position: { x: 75, y: 150 }, data: { label: "2" } },
+    { id: "2", position: { x: 75, y: 150 }, data: { label: "Sophie" } },
   ];
   const initialEdges = [{ id: "e1-2", source: agent.id, target: "2" }];
   return (
