@@ -28,7 +28,7 @@ export class Preloader extends Scene {
       frameHeight: 20,
     });
     this.load.image("tiles", "../muddy-ground.png");
-    this.load.image("wall", "../wall.png");
+    this.load.image("resource", "../resource.png");
   }
 
   create() {

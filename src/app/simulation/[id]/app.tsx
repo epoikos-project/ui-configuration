@@ -1,11 +1,24 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
 import { Simulation } from "@/types/Simulation";
 import { World } from "@/types/World";
 import { Agent } from "@/types/Agent";
-import { Button, FormControlLabel, Switch } from "@mui/material";
+import {
+  Button,
+  Card,
+  FormControlLabel,
+  Grid,
+  Paper,
+  Switch,
+  Typography,
+} from "@mui/material";
 import { Home } from "./game/scences/Home";
+import { AgentInfo } from "@/app/components/AgentInfo";
+import { EventBus } from "./game/EventBus";
+import { SimulationInfo } from "@/app/components/SimulationInfo";
+import { useAgents } from "@/app/hooks/useAgents";
+import { AgentProvider } from "@/app/provider/AgentProvider";
 
 export interface SimProps {
   world: World;
@@ -17,8 +30,24 @@ function App(props: SimProps) {
   const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
 
+  const { agents } = useAgents();
+
+  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    const listener = (agent: Agent) => {
+      setSelectedAgent(agents.find((a) => a.id === agent.id));
+    };
+    EventBus.on("agent-selected", listener);
+    return () => {
+      EventBus.removeListener("agent-selected", listener);
+    };
+  }, [agents]);
+
   return (
     <div id="app">
+      <SimulationInfo {...props} />
       <FormControlLabel
         control={
           <Switch
@@ -42,7 +71,20 @@ function App(props: SimProps) {
       >
         Reset Camera
       </Button>
-      <PhaserSimulation ref={phaserRef} {...props} />
+      <Grid container columns={2} spacing={2}>
+        <Grid sx={{ ml: 3 }}>
+          <PhaserSimulation ref={phaserRef} {...props} />
+        </Grid>
+        <Grid>
+          {selectedAgent ? (
+            <AgentProvider agent={selectedAgent}>
+              <AgentInfo />
+            </AgentProvider>
+          ) : (
+            <div>No agent selected</div>
+          )}
+        </Grid>
+      </Grid>
     </div>
   );
 }
