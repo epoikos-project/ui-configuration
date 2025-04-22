@@ -12,11 +12,13 @@ import { startSimulation, stopSimulation } from "./actions";
 import { EventBus } from "./game/EventBus";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
 import { Home } from "./game/scences/Home";
+import { Resource } from "../../../types/Resource";
 
 export interface SimProps {
   world: World;
   simulation: Simulation;
   agents: Agent[];
+  resources: Resource[];
 }
 function App(props: SimProps) {
   //  References to the PhaserGame component (game and scene are exposed)
@@ -26,7 +28,7 @@ function App(props: SimProps) {
   const { agents } = useAgents();
 
   const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(
-    undefined,
+    undefined
   );
   useEffect(() => {
     const listener = (agent: Agent) => {
