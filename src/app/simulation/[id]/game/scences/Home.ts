@@ -73,8 +73,8 @@ export class Home extends Scene {
     const agent = message.json<AgentMovedMessage>();
     console.log("Agent moved:", agent.id);
     this.gridEngine.moveTo(agent.id, {
-      x: agent.location[0],
-      y: agent.location[1],
+      x: agent.new_location[0],
+      y: agent.new_location[1],
     });
   }
 

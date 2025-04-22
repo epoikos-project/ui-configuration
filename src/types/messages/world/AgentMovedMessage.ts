@@ -1,5 +1,8 @@
 import { WorldBaseMessage } from "./WorldBaseMessage";
 
 export interface AgentMovedMessage extends WorldBaseMessage {
-  location: [number, number];
+  new_location: [number, number];
+  start_location: [number, number];
+  destination: [number, number];
+  num_steps: number;
 }
