@@ -15,6 +15,7 @@ import { Msg } from "@nats-io/nats-core";
 import assert from "assert";
 import { SimProps } from "../../app";
 import { EventBus } from "../EventBus";
+import { Resource } from "../../../../../types/Resource";
 
 export class Home extends Scene {
   camera!: Phaser.Cameras.Scene2D.Camera;
@@ -25,8 +26,12 @@ export class Home extends Scene {
 
   simulation!: Simulation;
   world!: World;
-  agents!: { agent: Agent; sprite: Phaser.GameObjects.Sprite }[];
+  agents!: Agent[];
+  resources!: Resource[];
   subscribe!: SubscribeFunction<Home>;
+
+  agentContainers: { id: string; container: Phaser.GameObjects.Container }[] =
+    [];
 
   private gridEngine!: GridEngine;
   playerSprite!: Phaser.GameObjects.Sprite;
@@ -36,6 +41,8 @@ export class Home extends Scene {
   cameraIsFollowingSprite = false;
 
   cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+
+  selectedAgentId = "";
 
   constructor() {
     super("Home");
@@ -53,30 +60,33 @@ export class Home extends Scene {
   agentCreateHandler(message: Msg) {
     const agent = message.json<AgentPlacedMessage>();
     console.log("Agent created:", agent.id);
-    this.createCharacter(
-      agent.id,
-      agent.name,
-      agent.location[0],
-      agent.location[1],
-    );
+    // @TODO this.agents.push({id: agent.id, name: agent.name, })
+    this.createAgent({
+      id: agent.id,
+      name: agent.name,
+      x_coord: agent.location[0],
+      y_coord: agent.location[1],
+    });
   }
 
   agentMoveHandler(message: Msg) {
     const agent = message.json<AgentMovedMessage>();
     console.log("Agent moved:", agent.id);
     this.gridEngine.moveTo(agent.id, {
-      x: agent.location[0],
-      y: agent.location[1],
+      x: agent.new_location[0],
+      y: agent.new_location[1],
     });
   }
 
-  createCharacter(id: string, name: string, x: number, y: number) {
-    const agentSprite = this.createSprite(name);
+  createAgent(agent: Pick<Agent, "id" | "name" | "x_coord" | "y_coord">) {
+    const agentSprite = this.createSprite(agent);
+    this.agentContainers.push({ id: agent.id, container: agentSprite[1] });
     this.gridEngine.addCharacter({
-      id: id,
-      sprite: agentSprite,
+      id: agent.id,
+      sprite: agentSprite[0],
+      container: agentSprite[1],
       walkingAnimationMapping: 0,
-      startPosition: { x: x, y: y },
+      startPosition: { x: agent.x_coord, y: agent.y_coord },
       collides: true,
     });
     return agentSprite;
@@ -84,34 +94,61 @@ export class Home extends Scene {
 
   resetCamera() {
     this.cameraIsFollowingSprite = false;
+    this.resetAgentSelection();
     this.cameras.main.stopFollow();
+    this.cameras.main.setZoom(1);
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number),
+      0.5 * (this.game.config.height as number)
     );
   }
 
-  createSprite(name: string) {
+  resetAgentSelection() {
+    this.selectedAgentId = "";
+    this.agentContainers.forEach((agent) => {
+      (agent.container.getAt(1) as Phaser.GameObjects.Text).setVisible(false);
+    });
+  }
+
+  createSprite(
+    agent: Pick<Agent, "id" | "name">
+  ): [Phaser.GameObjects.Sprite, Phaser.GameObjects.Container] {
     const agentSprite = this.add.sprite(0, 0, "fluffy");
     agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
     agentSprite.setInteractive();
-    agentSprite.name = name;
+    agentSprite.name = agent.name;
+    const text: Phaser.GameObjects.Text = this.add
+      .text(
+        agentSprite.width * 0.5,
+        agentSprite.height * 0.5 - 15,
+        agentSprite.name
+      )
+      .setOrigin(0.5, 0.5);
+    text.setVisible(false);
+    const container = this.add.container(0, 0, [agentSprite, text]);
     agentSprite.on("pointermove", () => {
-      const text = this.add.text(
-        agentSprite.x - 15,
-        agentSprite.y - 15,
-        agentSprite.name,
-      );
-      agentSprite.on("pointerout", () => {
-        text.destroy();
-      });
+      if (!text.visible) {
+        text.setVisible(true);
+      }
+    });
+
+    agentSprite.on("pointerout", () => {
+      if (text.visible && this.selectedAgentId !== agent.id) {
+        text.setVisible(false);
+      }
     });
 
     agentSprite.on("pointerdown", () => {
-      this.cameras.main.startFollow(agentSprite, true);
+      this.cameras.main.startFollow(container, true);
       this.cameraIsFollowingSprite = true;
+
+      this.resetAgentSelection();
+      this.selectedAgentId = agent.id;
+      text.setVisible(true);
+
+      EventBus.emit("agent-selected", { id: agent.id, name: agent.name });
     });
-    return agentSprite;
+    return [agentSprite, container];
   }
 
   worldToGridPosition(x: number, y: number) {
@@ -122,18 +159,15 @@ export class Home extends Scene {
   }
 
   init(data: { props: SimProps; subscribe: SubscribeFunction<Home> }) {
-    const { world, agents, simulation } = data.props;
+    const { world, agents, simulation, resources } = data.props;
     this.world = world;
     this.simulation = simulation;
-    this.agents = agents.map((agent) => ({
-      agent,
-      sprite: this.createSprite(agent.name),
-    }));
+    this.agents = agents;
     this.subscribe = data.subscribe;
+    this.resources = resources;
   }
 
   create() {
-    console.log(this.world);
     const tiles = [7, 7, 7, 6, 6, 6, 0, 0, 0, 1, 1, 2, 3, 4, 5];
     const mapData = [];
 
@@ -144,8 +178,8 @@ export class Home extends Scene {
         //  Scatter the tiles so we get more mud and less stones
         let tileIndex = 0;
         if (
-          this.world.resource_coords.findIndex(
-            (value) => value[0] === x && value[1] === y,
+          this.resources.findIndex(
+            (value) => value.x_coord === x && value.y_coord === y
           ) !== -1
         ) {
           // Debug log removed to avoid unintended console output in production.
@@ -159,7 +193,6 @@ export class Home extends Scene {
 
       mapData.push(row);
     }
-
     this.tilemap = this.make.tilemap({
       data: mapData,
       tileWidth: 16,
@@ -168,13 +201,13 @@ export class Home extends Scene {
 
     const tileset = this.tilemap.addTilesetImage("tiles");
     const wallTileset = this.tilemap.addTilesetImage(
-      "wall",
-      "wall",
+      "resource",
+      "resource",
       16,
-      32,
+      16,
       0,
       0,
-      8,
+      8
     );
 
     assert(tileset);
@@ -188,22 +221,27 @@ export class Home extends Scene {
           tile.properties = { ge_collide: true };
           tile.setCollision(true);
         }
-      }),
+      })
     );
 
     this.playerSprite = this.add.sprite(0, 0, "fluffy");
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number),
+      0.5 * (this.game.config.height as number)
     );
     const gridEngineConfig: GridEngineConfig = {
-      characters: this.agents.map((a) => ({
-        id: a.agent.id,
-        sprite: a.sprite,
-        startPosition: { x: a.agent.x_coord, y: a.agent.y_coord },
-        walkingAnimationMapping: 0,
-        collides: true,
-      })),
+      characters: this.agents.map((agent) => {
+        const sprite = this.createSprite(agent);
+        this.agentContainers.push({ id: agent.id, container: sprite[1] });
+        return {
+          id: agent.id,
+          sprite: sprite[0],
+          container: sprite[1],
+          startPosition: { x: agent.x_coord, y: agent.y_coord },
+          walkingAnimationMapping: 0,
+          collides: true,
+        };
+      }),
       characterCollisionStrategy: CollisionStrategy.BLOCK_ONE_TILE_AHEAD,
       layerOverlay: true,
     };
@@ -231,15 +269,42 @@ export class Home extends Scene {
       this.cursors = keyboard.createCursorKeys()!;
     }
 
+    this.input.on("pointermove", function (p) {
+      if (!p.isDown) return;
+
+      this.cameras.main.scrollX -=
+        (p.x - p.prevPosition.x) / this.cameras.main.zoom;
+      this.cameras.main.scrollY -=
+        (p.y - p.prevPosition.y) / this.cameras.main.zoom;
+    });
+
+    this.input.on(
+      "wheel",
+      (
+        _pointer: any,
+        _gameObjects: Array<any>,
+        _deltaX: number,
+        deltaY: number
+      ) => {
+        const cam = this.cameras.main;
+
+        // Adjust zoom factor based on wheel direction
+        const zoomSpeed = 0.01;
+        cam.zoom -= deltaY * zoomSpeed;
+
+        cam.zoom = Phaser.Math.Clamp(cam.zoom, 0.5, 3);
+      }
+    );
+
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.placed`,
       this.agentCreateHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.moved`,
       this.agentMoveHandler,
-      this,
+      this
     );
 
     EventBus.emit("current-scene-ready", this);

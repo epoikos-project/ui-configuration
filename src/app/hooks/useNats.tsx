@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { NatsContext } from "../components/NatsProvider";
+import { NatsContext } from "../provider/NatsProvider";
 
 export const useNats = () => {
   const context = useContext(NatsContext);
