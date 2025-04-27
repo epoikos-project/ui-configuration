@@ -33,10 +33,10 @@ export function AgentProvider({
       const data: AgentMovedMessage = msg.json();
       setAgent((a) => ({
         ...a,
-        x_coord: data.location[0],
-        y_coord: data.location[1],
+        x_coord: data.new_location[0],
+        y_coord: data.new_location[1],
       }));
-    },
+    }
   );
 
   return (
