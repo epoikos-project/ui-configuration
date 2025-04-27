@@ -8,7 +8,7 @@ import { Simulation } from "@/types/Simulation";
 import { World } from "@/types/World";
 import { Box, Button, FormControlLabel, Grid, Switch } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { startSimulation, stopSimulation } from "./actions";
+import { startSimulation, stopSimulation, tickSimulation } from "./actions";
 import { EventBus } from "./game/EventBus";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
 import { Home } from "./game/scences/Home";
@@ -89,6 +89,16 @@ function App(props: SimProps) {
           }}
         >
           Start Simulation
+        </Button>
+        <Button
+          sx={{ ml: 2 }}
+          variant="outlined"
+          color="primary"
+          onClick={() => {
+            tickSimulation(props.simulation.id);
+          }}
+        >
+          Tick Simulation Once
         </Button>
         <Button
           variant="contained"

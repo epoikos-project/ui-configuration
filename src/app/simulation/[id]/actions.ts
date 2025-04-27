@@ -10,3 +10,9 @@ export async function stopSimulation(id: string) {
     method: "POST",
   });
 }
+
+export async function tickSimulation(id: string) {
+  await fetch(`http://localhost:8000/orchestrator/tick/${id}`, {
+    method: "POST",
+  });
+}
