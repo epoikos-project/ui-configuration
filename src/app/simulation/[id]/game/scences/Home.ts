@@ -73,8 +73,8 @@ export class Home extends Scene {
     const agent = message.json<AgentMovedMessage>();
     console.log("Agent moved:", agent.id);
     this.gridEngine.moveTo(agent.id, {
-      x: agent.new_location[0],
-      y: agent.new_location[1],
+      x: agent.location[0],
+      y: agent.location[1],
     });
   }
 
@@ -99,7 +99,7 @@ export class Home extends Scene {
     this.cameras.main.setZoom(1);
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number)
+      0.5 * (this.game.config.height as number),
     );
   }
 
@@ -111,7 +111,7 @@ export class Home extends Scene {
   }
 
   createSprite(
-    agent: Pick<Agent, "id" | "name">
+    agent: Pick<Agent, "id" | "name">,
   ): [Phaser.GameObjects.Sprite, Phaser.GameObjects.Container] {
     const agentSprite = this.add.sprite(0, 0, "fluffy");
     agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
@@ -121,7 +121,7 @@ export class Home extends Scene {
       .text(
         agentSprite.width * 0.5,
         agentSprite.height * 0.5 - 15,
-        agentSprite.name
+        agentSprite.name,
       )
       .setOrigin(0.5, 0.5);
     text.setVisible(false);
@@ -179,7 +179,7 @@ export class Home extends Scene {
         let tileIndex = 0;
         if (
           this.resources.findIndex(
-            (value) => value.x_coord === x && value.y_coord === y
+            (value) => value.x_coord === x && value.y_coord === y,
           ) !== -1
         ) {
           // Debug log removed to avoid unintended console output in production.
@@ -207,7 +207,7 @@ export class Home extends Scene {
       16,
       0,
       0,
-      8
+      8,
     );
 
     assert(tileset);
@@ -221,13 +221,13 @@ export class Home extends Scene {
           tile.properties = { ge_collide: true };
           tile.setCollision(true);
         }
-      })
+      }),
     );
 
     this.playerSprite = this.add.sprite(0, 0, "fluffy");
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number)
+      0.5 * (this.game.config.height as number),
     );
     const gridEngineConfig: GridEngineConfig = {
       characters: this.agents.map((agent) => {
@@ -284,7 +284,7 @@ export class Home extends Scene {
         _pointer: any,
         _gameObjects: Array<any>,
         _deltaX: number,
-        deltaY: number
+        deltaY: number,
       ) => {
         const cam = this.cameras.main;
 
@@ -293,18 +293,18 @@ export class Home extends Scene {
         cam.zoom -= deltaY * zoomSpeed;
 
         cam.zoom = Phaser.Math.Clamp(cam.zoom, 0.5, 3);
-      }
+      },
     );
 
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.placed`,
       this.agentCreateHandler,
-      this
+      this,
     );
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.moved`,
       this.agentMoveHandler,
-      this
+      this,
     );
 
     EventBus.emit("current-scene-ready", this);
