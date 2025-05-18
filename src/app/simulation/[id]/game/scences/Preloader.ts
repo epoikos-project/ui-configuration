@@ -29,6 +29,7 @@ export class Preloader extends Scene {
     });
     this.load.image("tiles", "../muddy-ground.png");
     this.load.image("resource", "../resource.png");
+    this.load.image("resource-harvested", "../resource-harvested.png");
   }
 
   create() {

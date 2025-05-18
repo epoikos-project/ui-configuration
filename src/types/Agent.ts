@@ -5,6 +5,7 @@ export interface Agent {
   name: string;
   model: string;
   hunger: number;
+  energy_level: number;
   x_coord: number;
   y_coord: number;
   visibility_range: number;

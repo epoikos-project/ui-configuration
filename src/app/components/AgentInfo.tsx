@@ -23,6 +23,8 @@ export function AgentInfo() {
 
       <Typography variant="body1">Model: {agent.model}</Typography>
       <Typography variant="body1">Hunger: {agent.hunger}</Typography>
+      <Typography variant="body1">Energy: {agent.energy_level}</Typography>
+
       <Typography variant="body1">
         Coordinates: (
         <b>

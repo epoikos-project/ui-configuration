@@ -18,14 +18,7 @@ import {
   MenuItem,
   Slider,
 } from "@mui/material";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  BarChart,
-  Bar,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, BarChart, Bar } from "recharts";
 import { Edit, FileCopy, Delete } from "@mui/icons-material";
 
 export type AgentType = {
@@ -56,7 +49,7 @@ type Props = {
 };
 
 const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
-  const MANDATORY: readonly string[] = ["hunger"];
+  const MANDATORY: readonly string[] = ["hunger", "energyLevel"];
   const [editing, setEditing] = useState<AgentType | null>(null);
   const [name, setName] = useState("");
   const [count, setCount] = useState(1);
@@ -64,7 +57,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
   const [objective, setObjective] = useState("");
   const [personality, setPersonality] = useState<string[]>([""]);
   const [attributes, setAttributes] = useState<Attribute[]>(() =>
-    MANDATORY.map((n) => ({ name: n, spec: { type: "fixed", value: 0 } }))
+    MANDATORY.map((n) => ({ name: n, spec: { type: "fixed", value: 0 } })),
   );
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -79,7 +72,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
       MANDATORY.map((n) => ({
         name: n,
         spec: { type: "fixed", value: 0 },
-      }))
+      })),
     );
     setErrors([]);
   };
@@ -92,34 +85,37 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
     setObjective(a.objective ?? "");
     setPersonality(a.personality ?? [""]);
     setAttributes(
-            a.attributes.map((at) =>
-              // if it already has spec, keep it; otherwise wrap value
-              'spec' in at
-                ? (at as Attribute)
-                : ({ name: at.name, spec: { type: 'fixed', value: (at as any).value } })
-            )
-          );
+      a.attributes.map((at) =>
+        // if it already has spec, keep it; otherwise wrap value
+        "spec" in at
+          ? (at as Attribute)
+          : {
+              name: at.name,
+              spec: { type: "fixed", value: (at as any).value },
+            },
+      ),
+    );
   };
 
   const validateForm = () => {
-        const e: string[] = [];
-        if (!name.trim()) e.push("Name required");
-        MANDATORY.forEach((m) => {
-          if (!attributes.some((at) => at.name === m)) e.push(`Missing ${m}`);
-        });
-        return e;
-      };
-  
+    const e: string[] = [];
+    if (!name.trim()) e.push("Name required");
+    MANDATORY.forEach((m) => {
+      if (!attributes.some((at) => at.name === m)) e.push(`Missing ${m}`);
+    });
+    return e;
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     // validateForm uses name + attributes from state
     const errs = validateForm();
     if (errs.length) {
       setErrors(errs);
       return;
     }
-  
+
     // expand into 'count' concrete agents
     const newOnes: AgentType[] = [];
     for (let i = 0; i < count; i++) {
@@ -136,11 +132,11 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
         })),
       });
     }
-  
+
     setAgents(
       editing
         ? agents.map((a) => (a.id === editing.id ? newOnes[0] : a))
-        : [...agents, ...newOnes]
+        : [...agents, ...newOnes],
     );
     reset();
   };
@@ -166,12 +162,12 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
     if (σ <= 0) {
       return [{ x: μ, y: 1 }];
     }
-  
+
     const data: { x: number; y: number }[] = [];
     const start = μ - 3 * σ;
     const end = μ + 3 * σ;
     const step = (end - start) / POINTS;
-  
+
     for (let i = 0; i <= POINTS; i++) {
       const x = start + i * step;
       const y =
@@ -180,7 +176,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
       data.push({ x, y });
     }
     return data;
-  };  
+  };
   const makeBinomialData = (n: number, p: number) => {
     const data: { x: number; y: number }[] = [];
     const C = (n: number, k: number) => {
@@ -207,67 +203,80 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
   };
 
   const sampleAttr = (spec: DistributionSpec): number => {
-      switch (spec.type) {
-          case "fixed":
-            return spec.value;
-          case "normal": {
-            // Box–Muller
-            let u = 0, v = 0;
-            while (u === 0) u = Math.random();
-            while (v === 0) v = Math.random();
-            const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-            return spec.mean + spec.stddev * z;
-          }
-          case "binomial": {
-            let c = 0;
-            for (let i = 0; i < spec.trials; i++) {
-              if (Math.random() < spec.probability) c++;
-            }
-            return c;
-          }
-          case "beta": {
-            // very naive Beta via two Gamma(α,1)/Gamma(β,1) draws
-            const gamma = (shape: number) => {
-              // Marsaglia & Tsang
-              if (shape < 1) {
-                const d = shape + (2 / 3);
-                const c = 1 / Math.sqrt(9 * d);
-                while (true) {
-                  let x = 0, v = 0;
-                  do {
-                    x = Math.random() * 2 - 1;
-                    v = Math.random() * 2 - 1;
-                  } while (x * x + v * v > 1);
-                  const n = x * Math.sqrt(-2 * Math.log(x * x + v * v) / (x * x + v * v));
-                  const delta = 1 + c * n;
-                  if (delta > 0 && Math.log(Math.random()) < 0.5 * n * n + d - d * delta + d * Math.log(delta))
-                    return d * delta * Math.pow(Math.random(), 1 / shape);
-                }
-              } else {
-                const d = shape - (1 / 3);
-                const c = 1 / Math.sqrt(9 * d);
-                while (true) {
-                  let x = 0, v = 0;
-                  do {
-                    x = Math.random() * 2 - 1;
-                    v = Math.random() * 2 - 1;
-                  } while (x * x + v * v > 1);
-                  const n = x * Math.sqrt(-2 * Math.log(x * x + v * v) / (x * x + v * v));
-                  const delta = 1 + c * n;
-                  if (delta > 0 && Math.log(Math.random()) < 0.5 * n * n + d - d * delta + d * Math.log(delta))
-                    return d * delta;
-                }
-              }
-            };
-            const g1 = gamma(spec.alpha);
-            const g2 = gamma(spec.beta);
-            return g1 / (g1 + g2);
-          }
-          case "dirichlet":
-            // not supported as a single numeric attribute—fall back to equal share
-            return 1 / spec.alphas.length;
+    switch (spec.type) {
+      case "fixed":
+        return spec.value;
+      case "normal": {
+        // Box–Muller
+        let u = 0,
+          v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        return spec.mean + spec.stddev * z;
+      }
+      case "binomial": {
+        let c = 0;
+        for (let i = 0; i < spec.trials; i++) {
+          if (Math.random() < spec.probability) c++;
         }
-      };
+        return c;
+      }
+      case "beta": {
+        // very naive Beta via two Gamma(α,1)/Gamma(β,1) draws
+        const gamma = (shape: number) => {
+          // Marsaglia & Tsang
+          if (shape < 1) {
+            const d = shape + 2 / 3;
+            const c = 1 / Math.sqrt(9 * d);
+            while (true) {
+              let x = 0,
+                v = 0;
+              do {
+                x = Math.random() * 2 - 1;
+                v = Math.random() * 2 - 1;
+              } while (x * x + v * v > 1);
+              const n =
+                x * Math.sqrt((-2 * Math.log(x * x + v * v)) / (x * x + v * v));
+              const delta = 1 + c * n;
+              if (
+                delta > 0 &&
+                Math.log(Math.random()) <
+                  0.5 * n * n + d - d * delta + d * Math.log(delta)
+              )
+                return d * delta * Math.pow(Math.random(), 1 / shape);
+            }
+          } else {
+            const d = shape - 1 / 3;
+            const c = 1 / Math.sqrt(9 * d);
+            while (true) {
+              let x = 0,
+                v = 0;
+              do {
+                x = Math.random() * 2 - 1;
+                v = Math.random() * 2 - 1;
+              } while (x * x + v * v > 1);
+              const n =
+                x * Math.sqrt((-2 * Math.log(x * x + v * v)) / (x * x + v * v));
+              const delta = 1 + c * n;
+              if (
+                delta > 0 &&
+                Math.log(Math.random()) <
+                  0.5 * n * n + d - d * delta + d * Math.log(delta)
+              )
+                return d * delta;
+            }
+          }
+        };
+        const g1 = gamma(spec.alpha);
+        const g2 = gamma(spec.beta);
+        return g1 / (g1 + g2);
+      }
+      case "dirichlet":
+        // not supported as a single numeric attribute—fall back to equal share
+        return 1 / spec.alphas.length;
+    }
+  };
 
   return (
     <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
@@ -310,8 +319,12 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
             value={model}
             onChange={(e) => setModel(e.target.value as string)}
           >
-            <MenuItem value="llama-3.1-8b-instruct">llama-3.1-8b-instruct</MenuItem>
-            <MenuItem value="llama-3.3-70b-instruct">llama-3.3-70b-instruct</MenuItem>
+            <MenuItem value="llama-3.1-8b-instruct">
+              llama-3.1-8b-instruct
+            </MenuItem>
+            <MenuItem value="llama-3.3-70b-instruct">
+              llama-3.3-70b-instruct
+            </MenuItem>
           </Select>
         </Box>
         <TextField
@@ -331,20 +344,26 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
                 value={p}
                 onChange={(e) =>
                   setPersonality((ps) =>
-                    ps.map((t, idx) => (idx === i ? e.target.value : t))
+                    ps.map((t, idx) => (idx === i ? e.target.value : t)),
                   )
                 }
               />
               <Button
                 variant="outlined"
                 color="error"
-                onClick={() => setPersonality((ps) => ps.filter((_, idx) => idx !== i))}
+                onClick={() =>
+                  setPersonality((ps) => ps.filter((_, idx) => idx !== i))
+                }
               >
                 Remove
               </Button>
             </Box>
           ))}
-          <Button variant="contained" sx={{ mt: 1 }} onClick={() => setPersonality((ps) => [...ps, ""])}>
+          <Button
+            variant="contained"
+            sx={{ mt: 1 }}
+            onClick={() => setPersonality((ps) => [...ps, ""])}
+          >
             Add Trait
           </Button>
         </Box>
@@ -403,7 +422,10 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
                     sx={{ width: 100 }}
                     value={attr.spec.value}
                     onChange={(e) =>
-                      changeAttrSpec(i, { ...attr.spec, value: +e.target.value })
+                      changeAttrSpec(i, {
+                        ...attr.spec,
+                        value: +e.target.value,
+                      })
                     }
                   />
                 )}
@@ -677,7 +699,9 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
                     variant="outlined"
                     color="error"
                     onClick={() =>
-                      setAttributes((atts) => atts.filter((_, idx) => idx !== i))
+                      setAttributes((atts) =>
+                        atts.filter((_, idx) => idx !== i),
+                      )
                     }
                   >
                     Remove

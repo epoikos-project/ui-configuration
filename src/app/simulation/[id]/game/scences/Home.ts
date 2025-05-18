@@ -16,6 +16,8 @@ import assert from "assert";
 import { SimProps } from "../../app";
 import { EventBus } from "../EventBus";
 import { Resource } from "../../../../../types/Resource";
+import { ResourceHarvestedMessage } from "@/types/messages/world/ResourceHarvestedMessage";
+import { ResourceGrownMessage } from "@/types/messages/world/ResourceGrownMessage";
 
 export class Home extends Scene {
   camera!: Phaser.Cameras.Scene2D.Camera;
@@ -57,6 +59,33 @@ export class Home extends Scene {
     this.debugGraphics.destroy();
   }
 
+  updateTileIndex(x: number, y: number, index: number) {
+    const tile = this.tilemap.getTileAt(x, y);
+    if (tile) {
+      const newTile = new Phaser.Tilemaps.Tile(
+        this.tilemap.layer,
+        index,
+        tile.x,
+        tile.y,
+        tile.width,
+        tile.height,
+        tile.baseWidth,
+        tile.baseHeight,
+      );
+      this.tilemap.putTileAt(newTile, tile.x, tile.y);
+    }
+  }
+
+  resourceHarvestedHandler(message: Msg) {
+    const parsed = message.json<ResourceHarvestedMessage>();
+    this.updateTileIndex(parsed.location[0], parsed.location[1], 9);
+  }
+
+  resourceGrownHandler(message: Msg) {
+    const parsed = message.json<ResourceGrownMessage>();
+    this.updateTileIndex(parsed.location[0], parsed.location[1], 8);
+  }
+
   agentCreateHandler(message: Msg) {
     const agent = message.json<AgentPlacedMessage>();
     console.log("Agent created:", agent.id);
@@ -73,8 +102,8 @@ export class Home extends Scene {
     const agent = message.json<AgentMovedMessage>();
     console.log("Agent moved:", agent.id);
     this.gridEngine.moveTo(agent.id, {
-      x: agent.location[0],
-      y: agent.location[1],
+      x: agent.new_location[0],
+      y: agent.new_location[1],
     });
   }
 
@@ -177,13 +206,15 @@ export class Home extends Scene {
       for (let x = 0; x < this.world.size_x; x++) {
         //  Scatter the tiles so we get more mud and less stones
         let tileIndex = 0;
-        if (
-          this.resources.findIndex(
-            (value) => value.x_coord === x && value.y_coord === y,
-          ) !== -1
-        ) {
-          // Debug log removed to avoid unintended console output in production.
-          tileIndex = 8;
+        const resource = this.resources.find(
+          (value) => value.x_coord === x && value.y_coord === y,
+        );
+        if (resource != null) {
+          if (resource.availability) {
+            tileIndex = 8;
+          } else {
+            tileIndex = 9;
+          }
         } else {
           tileIndex = Phaser.Math.RND.weightedPick(tiles);
         }
@@ -209,15 +240,30 @@ export class Home extends Scene {
       0,
       8,
     );
+    const resourceHarvestedTileset = this.tilemap.addTilesetImage(
+      "resource-harvested",
+      "resource-harvested",
+      16,
+      16,
+      0,
+      0,
+      9,
+    );
 
     assert(tileset);
     assert(wallTileset);
+    assert(resourceHarvestedTileset);
 
-    this.tilemap.createLayer(0, [tileset, wallTileset], 0, 0);
+    this.tilemap.createLayer(
+      0,
+      [tileset, wallTileset, resourceHarvestedTileset],
+      0,
+      0,
+    );
 
     this.tilemap.layer.data.forEach((row) =>
       row.forEach((tile) => {
-        if (tile.index === 8) {
+        if (tile.index in [8, 9]) {
           tile.properties = { ge_collide: true };
           tile.setCollision(true);
         }
@@ -306,7 +352,16 @@ export class Home extends Scene {
       this.agentMoveHandler,
       this,
     );
-
+    this.subscribe(
+      `simulation.${this.simulation.id}.resource.*.harvested`,
+      this.resourceHarvestedHandler,
+      this,
+    );
+    this.subscribe(
+      `simulation.${this.simulation.id}.resource.*.grown`,
+      this.resourceGrownHandler,
+      this,
+    );
     EventBus.emit("current-scene-ready", this);
   }
 

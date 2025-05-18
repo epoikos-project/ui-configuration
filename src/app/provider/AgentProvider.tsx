@@ -35,8 +35,9 @@ export function AgentProvider({
         ...a,
         x_coord: data.new_location[0],
         y_coord: data.new_location[1],
+        energy_level: a.energy_level - 1,
       }));
-    }
+    },
   );
 
   return (
