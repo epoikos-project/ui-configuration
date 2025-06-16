@@ -7,6 +7,7 @@ import { Agent } from "@/types/Agent";
 import { Simulation } from "@/types/Simulation";
 import { World } from "@/types/World";
 import { Box, Button, FormControlLabel, Grid, Switch } from "@mui/material";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { startSimulation, stopSimulation, tickSimulation } from "./actions";
 import { EventBus } from "./game/EventBus";
@@ -21,6 +22,7 @@ export interface SimProps {
   resources: Resource[];
 }
 function App(props: SimProps) {
+  const router = useRouter();
   //  References to the PhaserGame component (game and scene are exposed)
   const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
@@ -42,6 +44,9 @@ function App(props: SimProps) {
 
   return (
     <Box id="app" sx={{ ml: 5 }}>
+      <Button variant="outlined" onClick={() => router.push('/')} sx={{ mb: 2 }}>
+        Back to Config
+      </Button>
       <SimulationInfo {...props} />
       <FormControlLabel
         control={
