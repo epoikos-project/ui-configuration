@@ -193,9 +193,37 @@ const Page: React.FC = () => {
       setStatusMessage("Error launching simulation");
     }
   };
+  const handleDeleteConfig = async (name: string) => {
+    try {
+      const r = await fetch(`${BASEURL}/configuration/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.message || r.statusText);
+      await fetchConfigurations();
+      setStatusMessage(data.message || `Configuration '${name}' deleted.`);
+    } catch (e) {
+      console.error("Error deleting configuration:", e);
+      setStatusMessage("Error deleting configuration");
+    }
+  };
 
   const handleOpenSimulation = (id: string) => {
     window.open(`/simulation/${id}`, '_blank');
+  };
+  const handleDeleteSimulation = async (id: string) => {
+    try {
+      const r = await fetch(`${BASEURL}/simulation/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.message || r.statusText);
+      await fetchSimulations();
+      setStatusMessage(data.message || `Simulation '${id}' deleted.`);
+    } catch (e) {
+      console.error("Error deleting simulation:", e);
+      setStatusMessage("Error deleting simulation");
+    }
   };
 
   return (
@@ -229,7 +257,7 @@ const Page: React.FC = () => {
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Name</TableCell>
-                  <TableCell align="center">Launch</TableCell>
+                  <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -240,6 +268,14 @@ const Page: React.FC = () => {
                     <TableCell align="center">
                       <Button size="small" onClick={() => handleLaunchConfig(cfg.name)}>
                         Launch
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        sx={{ ml: 1 }}
+                        onClick={() => handleDeleteConfig(cfg.name)}
+                      >
+                        Delete
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -276,6 +312,9 @@ const Page: React.FC = () => {
                     <TableCell align="center">
                       <Button size="small" onClick={() => handleOpenSimulation(sim.id)}>
                         Open
+                      </Button>
+                      <Button size="small" color="error" sx={{ ml: 1 }} onClick={() => handleDeleteSimulation(sim.id)}>
+                        Delete
                       </Button>
                     </TableCell>
                   </TableRow>

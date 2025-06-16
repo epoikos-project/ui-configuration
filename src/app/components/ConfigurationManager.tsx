@@ -194,6 +194,19 @@ const ConfigurationManager: React.FC<Props> = ({
     }
   };
 
+  const handleDeleteSimulation = async (id: string) => {
+    try {
+      const response = await fetch(`${BASEURL}/simulation/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      setLoadStatus(data.message || "Simulation deleted successfully!");
+      fetchSimulations();
+    } catch (error) {
+      setLoadStatus("Error deleting simulation");
+    }
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
       <Typography variant="h5" align="center" gutterBottom>
@@ -333,8 +346,17 @@ const ConfigurationManager: React.FC<Props> = ({
                             variant="outlined"
                             size="small"
                             onClick={() => window.open(`/simulation/${sim.id}`, '_blank')}
+                            sx={{ mr: 1 }}
                           >
                             Open
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteSimulation(sim.id)}
+                          >
+                            Delete
                           </Button>
                         </TableCell>
                       </TableRow>
