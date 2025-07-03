@@ -325,6 +325,12 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
             <MenuItem value="llama-3.3-70b-instruct">
               llama-3.3-70b-instruct
             </MenuItem>
+            <MenuItem value="gpt-4o-mini-2024-07-18">
+              gpt-4o-mini-2024-07-18
+            </MenuItem>
+            <MenuItem value="o4-mini-2025-04-16">
+              o4-mini-2025-04-16
+            </MenuItem>
           </Select>
         </Box>
         <TextField
