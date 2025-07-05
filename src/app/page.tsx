@@ -29,7 +29,9 @@ import AgentConfigForm from "./components/AgentConfigForm";
 import WorldConfig from "./components/WorldConfig";
 import LiveJsonEditor from "./components/LiveJsonEditor";
 
-function TabPanel(props: React.PropsWithChildren<{ value: number; index: number }>) {
+function TabPanel(
+  props: React.PropsWithChildren<{ value: number; index: number }>
+) {
   const { children, value, index, ...other } = props;
   return (
     <div
@@ -55,7 +57,7 @@ interface AgentType {
   id: number;
   name: string;
   count: number;
-  traits?: string[];                     //  <- added to match ConfigurationManager
+  traits?: string[]; //  <- added to match ConfigurationManager
   model?: string;
   personality?: string[];
   objective?: string;
@@ -89,12 +91,14 @@ const Page: React.FC = () => {
   const [configList, setConfigList] = useState<UnifiedConfig[]>([]);
   /* list of active simulations */
   const [simList, setSimList] = useState<{ id: string }[]>([]);
+
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+
   /* dialog open state */
   const [openAdd, setOpenAdd] = useState(false);
   const [dialogTab, setDialogTab] = useState(0);
 
-  const BASEURL =
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  const BASEURL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
   /* ------------ data helpers ------------ */
 
@@ -119,11 +123,22 @@ const Page: React.FC = () => {
     }
   };
 
+  const fetchAvailableModels = async () => {
+    try {
+      const r = await fetch(`${BASEURL}/configuration/models`);
+      if (!r.ok) throw new Error("fetch failed");
+      setAvailableModels(await r.json());
+    } catch (e) {
+      console.error("Failed to fetch available models", e);
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchConfigurations();
     fetchSimulations();
+    fetchAvailableModels();
   }, []);
-
 
   /* ------------ render ------------ */
 
@@ -162,8 +177,8 @@ const Page: React.FC = () => {
       };
 
       const r = await fetch(`${BASEURL}/configuration`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!r.ok) throw new Error(r.statusText);
@@ -180,14 +195,14 @@ const Page: React.FC = () => {
     try {
       const r = await fetch(
         `${BASEURL}/orchestrator/initialize/${encodeURIComponent(name)}`,
-        { method: 'POST' }
+        { method: "POST" }
       );
       if (!r.ok) throw new Error(r.statusText);
       const data = await r.json();
       const simId = data.simulation_id || data.id;
-      if (!simId) throw new Error('No simulation ID returned');
+      if (!simId) throw new Error("No simulation ID returned");
       await fetchSimulations();
-      window.open(`/simulation/${simId}`, '_blank');
+      window.open(`/simulation/${simId}`, "_blank");
     } catch (e) {
       console.error("Failed to launch simulation:", e);
       setStatusMessage("Error launching simulation");
@@ -195,9 +210,12 @@ const Page: React.FC = () => {
   };
   const handleDeleteConfig = async (name: string) => {
     try {
-      const r = await fetch(`${BASEURL}/configuration/${encodeURIComponent(name)}`, {
-        method: 'DELETE',
-      });
+      const r = await fetch(
+        `${BASEURL}/configuration/${encodeURIComponent(name)}`,
+        {
+          method: "DELETE",
+        }
+      );
       const data = await r.json();
       if (!r.ok) throw new Error(data.message || r.statusText);
       await fetchConfigurations();
@@ -209,12 +227,12 @@ const Page: React.FC = () => {
   };
 
   const handleOpenSimulation = (id: string) => {
-    window.open(`/simulation/${id}`, '_blank');
+    window.open(`/simulation/${id}`, "_blank");
   };
   const handleDeleteSimulation = async (id: string) => {
     try {
       const r = await fetch(`${BASEURL}/simulation/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.message || r.statusText);
@@ -240,7 +258,12 @@ const Page: React.FC = () => {
         )}
 
         {/* Saved Configurations Table */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h5">Saved Configurations</Typography>
           <Button
             variant="contained"
@@ -266,7 +289,10 @@ const Page: React.FC = () => {
                     <TableCell>{cfg.id}</TableCell>
                     <TableCell>{cfg.name}</TableCell>
                     <TableCell align="center">
-                      <Button size="small" onClick={() => handleLaunchConfig(cfg.name)}>
+                      <Button
+                        size="small"
+                        onClick={() => handleLaunchConfig(cfg.name)}
+                      >
                         Launch
                       </Button>
                       <Button
@@ -310,10 +336,18 @@ const Page: React.FC = () => {
                   <TableRow key={sim.id}>
                     <TableCell>{sim.id}</TableCell>
                     <TableCell align="center">
-                      <Button size="small" onClick={() => handleOpenSimulation(sim.id)}>
+                      <Button
+                        size="small"
+                        onClick={() => handleOpenSimulation(sim.id)}
+                      >
                         Open
                       </Button>
-                      <Button size="small" color="error" sx={{ ml: 1 }} onClick={() => handleDeleteSimulation(sim.id)}>
+                      <Button
+                        size="small"
+                        color="error"
+                        sx={{ ml: 1 }}
+                        onClick={() => handleDeleteSimulation(sim.id)}
+                      >
                         Delete
                       </Button>
                     </TableCell>
@@ -332,16 +366,29 @@ const Page: React.FC = () => {
         </Paper>
 
         {/* Add Config Dialog */}
-        <Dialog open={openAdd} onClose={handleCloseConfigDialog} maxWidth="md" fullWidth>
+        <Dialog
+          open={openAdd}
+          onClose={handleCloseConfigDialog}
+          maxWidth="md"
+          fullWidth
+        >
           <DialogTitle>Add New Configuration</DialogTitle>
           <DialogContent dividers>
-            <Tabs value={dialogTab} onChange={(_, v) => setDialogTab(v)} variant="fullWidth">
+            <Tabs
+              value={dialogTab}
+              onChange={(_, v) => setDialogTab(v)}
+              variant="fullWidth"
+            >
               <Tab label="Agents" />
               <Tab label="World" />
               <Tab label="Preview" />
             </Tabs>
             <TabPanel value={dialogTab} index={0}>
-              <AgentConfigForm agents={agentTypes} setAgents={setAgentTypes} />
+              <AgentConfigForm
+                agents={agentTypes}
+                setAgents={setAgentTypes}
+                availableModels={availableModels}
+              />
             </TabPanel>
             <TabPanel value={dialogTab} index={1}>
               <WorldConfig

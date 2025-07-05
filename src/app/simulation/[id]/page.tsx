@@ -12,6 +12,7 @@ export default async function Home({
 
   const data = await fetch(`http://localhost:8000/simulation/${id}`);
   const worldData = await fetch(`http://localhost:8000/simulation/${id}/world`);
+  console.log(worldData);
   const agentsData = await fetch(
     `http://localhost:8000/simulation/${id}/agent`
   );
