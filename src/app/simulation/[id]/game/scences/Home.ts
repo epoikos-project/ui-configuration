@@ -70,7 +70,7 @@ export class Home extends Scene {
         tile.width,
         tile.height,
         tile.baseWidth,
-        tile.baseHeight,
+        tile.baseHeight
       );
       this.tilemap.putTileAt(newTile, tile.x, tile.y);
     }
@@ -128,7 +128,7 @@ export class Home extends Scene {
     this.cameras.main.setZoom(1);
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number),
+      0.5 * (this.game.config.height as number)
     );
   }
 
@@ -140,7 +140,7 @@ export class Home extends Scene {
   }
 
   createSprite(
-    agent: Pick<Agent, "id" | "name">,
+    agent: Pick<Agent, "id" | "name">
   ): [Phaser.GameObjects.Sprite, Phaser.GameObjects.Container] {
     const agentSprite = this.add.sprite(0, 0, "fluffy");
     agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
@@ -150,7 +150,7 @@ export class Home extends Scene {
       .text(
         agentSprite.width * 0.5,
         agentSprite.height * 0.5 - 15,
-        agentSprite.name,
+        agentSprite.name
       )
       .setOrigin(0.5, 0.5);
     text.setVisible(false);
@@ -207,10 +207,10 @@ export class Home extends Scene {
         //  Scatter the tiles so we get more mud and less stones
         let tileIndex = 0;
         const resource = this.resources.find(
-          (value) => value.x_coord === x && value.y_coord === y,
+          (value) => value.x_coord === x && value.y_coord === y
         );
         if (resource != null) {
-          if (resource.availability) {
+          if (resource.available) {
             tileIndex = 8;
           } else {
             tileIndex = 9;
@@ -238,7 +238,7 @@ export class Home extends Scene {
       16,
       0,
       0,
-      8,
+      8
     );
     const resourceHarvestedTileset = this.tilemap.addTilesetImage(
       "resource-harvested",
@@ -247,7 +247,7 @@ export class Home extends Scene {
       16,
       0,
       0,
-      9,
+      9
     );
 
     assert(tileset);
@@ -258,7 +258,7 @@ export class Home extends Scene {
       0,
       [tileset, wallTileset, resourceHarvestedTileset],
       0,
-      0,
+      0
     );
 
     this.tilemap.layer.data.forEach((row) =>
@@ -268,13 +268,13 @@ export class Home extends Scene {
           tile.properties = { ge_collide: true };
           tile.setCollision(true);
         }
-      }),
+      })
     );
 
     this.playerSprite = this.add.sprite(0, 0, "fluffy");
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number),
+      0.5 * (this.game.config.height as number)
     );
     const gridEngineConfig: GridEngineConfig = {
       characters: this.agents.map((agent) => {
@@ -331,7 +331,7 @@ export class Home extends Scene {
         _pointer: any,
         _gameObjects: Array<any>,
         _deltaX: number,
-        deltaY: number,
+        deltaY: number
       ) => {
         const cam = this.cameras.main;
 
@@ -340,28 +340,28 @@ export class Home extends Scene {
         cam.zoom -= deltaY * zoomSpeed;
 
         cam.zoom = Phaser.Math.Clamp(cam.zoom, 0.5, 3);
-      },
+      }
     );
 
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.placed`,
       this.agentCreateHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.moved`,
       this.agentMoveHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.resource.*.harvested`,
       this.resourceHarvestedHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.resource.*.grown`,
       this.resourceGrownHandler,
-      this,
+      this
     );
     EventBus.emit("current-scene-ready", this);
   }
