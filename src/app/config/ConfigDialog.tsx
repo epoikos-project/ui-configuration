@@ -20,6 +20,7 @@ import type { UnifiedConfig, AgentType } from "./types";
 interface Props {
   open: boolean;
   editingConfig: UnifiedConfig | null;
+  availableModels: { id: string; name: string }[];
   onClose: () => void;
   onSave: (
     name: string,
@@ -28,7 +29,9 @@ interface Props {
   ) => void;
 }
 
-function TabPanel(props: React.PropsWithChildren<{ value: number; index: number }>) {
+function TabPanel(
+  props: React.PropsWithChildren<{ value: number; index: number }>
+) {
   const { children, value, index, ...other } = props;
   return (
     <div role="tabpanel" hidden={value !== index} {...other}>
@@ -43,10 +46,15 @@ function TabPanel(props: React.PropsWithChildren<{ value: number; index: number 
 export default function ConfigDialog({
   open,
   editingConfig,
+  availableModels,
   onClose,
   onSave,
 }: Props) {
-  const DEFAULT_WORLD = { size: [25, 25] as [number, number], num_regions: 4, total_resources: 25 };
+  const DEFAULT_WORLD = {
+    size: [25, 25] as [number, number],
+    num_regions: 4,
+    total_resources: 25,
+  };
   const [tab, setTab] = useState(0);
   const [name, setName] = useState("");
   const [agents, setAgents] = useState<AgentType[]>([]);
@@ -93,7 +101,11 @@ export default function ConfigDialog({
           <Tab label="Preview" />
         </Tabs>
         <TabPanel value={tab} index={0}>
-          <AgentConfigForm agents={agents} setAgents={setAgents} />
+          <AgentConfigForm
+            agents={agents}
+            setAgents={setAgents}
+            availableModels={availableModels}
+          />
         </TabPanel>
         <TabPanel value={tab} index={1}>
           <WorldConfig
@@ -127,7 +139,10 @@ export default function ConfigDialog({
             onChange={(e) => setName(e.target.value)}
             fullWidth
           />
-          <Button variant="contained" onClick={() => onSave(name, agents, worldState)}>
+          <Button
+            variant="contained"
+            onClick={() => onSave(name, agents, worldState)}
+          >
             {editingConfig ? "Update Configuration" : "Save Configuration"}
           </Button>
         </Box>

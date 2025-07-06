@@ -1,12 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-} from "@mui/material";
+import { Container, Box, Typography, Button } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -21,9 +16,9 @@ const theme = createTheme({ colorSchemes: { dark: true } });
  * Page component tying together config management and simulation actions.
  */
 export default function ConfigPage() {
-  const BASEURL =
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  const BASEURL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   const {
+    availableModels,
     configList,
     simList,
     statusMessage,
@@ -75,6 +70,7 @@ export default function ConfigPage() {
         />
         <ConfigDialog
           open={isDialogOpen}
+          availableModels={availableModels}
           editingConfig={editingConfig}
           onClose={closeDialog}
           onSave={saveConfig}

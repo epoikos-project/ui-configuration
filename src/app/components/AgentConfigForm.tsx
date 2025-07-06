@@ -46,9 +46,14 @@ type Attribute = {
 type Props = {
   agents: AgentType[];
   setAgents: (agents: AgentType[]) => void;
+  availableModels: { id: string; name: string }[];
 };
 
-const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
+const AgentConfigForm: React.FC<Props> = ({
+  agents,
+  setAgents,
+  availableModels,
+}) => {
   const MANDATORY: readonly string[] = ["hunger", "energyLevel"];
   const [editing, setEditing] = useState<AgentType | null>(null);
   const [name, setName] = useState("");
@@ -57,7 +62,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
   const [objective, setObjective] = useState("");
   const [personality, setPersonality] = useState<string[]>([""]);
   const [attributes, setAttributes] = useState<Attribute[]>(() =>
-    MANDATORY.map((n) => ({ name: n, spec: { type: "fixed", value: 0 } })),
+    MANDATORY.map((n) => ({ name: n, spec: { type: "fixed", value: 0 } }))
   );
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -72,7 +77,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
       MANDATORY.map((n) => ({
         name: n,
         spec: { type: "fixed", value: 0 },
-      })),
+      }))
     );
     setErrors([]);
   };
@@ -92,8 +97,8 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
           : {
               name: at.name,
               spec: { type: "fixed", value: (at as any).value },
-            },
-      ),
+            }
+      )
     );
   };
 
@@ -136,7 +141,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
     setAgents(
       editing
         ? agents.map((a) => (a.id === editing.id ? newOnes[0] : a))
-        : [...agents, ...newOnes],
+        : [...agents, ...newOnes]
     );
     reset();
   };
@@ -319,18 +324,11 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
             value={model}
             onChange={(e) => setModel(e.target.value as string)}
           >
-            <MenuItem value="llama-3.1-8b-instruct">
-              llama-3.1-8b-instruct
-            </MenuItem>
-            <MenuItem value="llama-3.3-70b-instruct">
-              llama-3.3-70b-instruct
-            </MenuItem>
-            <MenuItem value="gpt-4o-mini-2024-07-18">
-              gpt-4o-mini-2024-07-18
-            </MenuItem>
-            <MenuItem value="o4-mini-2025-04-16">
-              o4-mini-2025-04-16
-            </MenuItem>
+            {availableModels.map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.name}
+              </MenuItem>
+            ))}
           </Select>
         </Box>
         <TextField
@@ -350,7 +348,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
                 value={p}
                 onChange={(e) =>
                   setPersonality((ps) =>
-                    ps.map((t, idx) => (idx === i ? e.target.value : t)),
+                    ps.map((t, idx) => (idx === i ? e.target.value : t))
                   )
                 }
               />
@@ -706,7 +704,7 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
                     color="error"
                     onClick={() =>
                       setAttributes((atts) =>
-                        atts.filter((_, idx) => idx !== i),
+                        atts.filter((_, idx) => idx !== i)
                       )
                     }
                   >

@@ -5,7 +5,7 @@ export interface Resource {
   simulation_id: string;
   x_coord: number; // X coordinate of the resource
   y_coord: number; // Y coordinate of the resource
-  availability: boolean; // Resource is available for harvesting
+  available: boolean; // Resource is available for harvesting
   energy_yield: number; // Amount of energy the resource yields
   mining_time: number; // Time it takes to harvest the resource
   regrow_time: number; // Time it takes for the resource to regrow

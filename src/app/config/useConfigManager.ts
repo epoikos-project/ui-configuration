@@ -12,9 +12,14 @@ import type { UnifiedConfig, Simulation, AgentType } from "./types";
 export function useConfigManager(baseUrl: string) {
   const [configList, setConfigList] = useState<UnifiedConfig[]>([]);
   const [simList, setSimList] = useState<Simulation[]>([]);
+  const [availableModels, setAvailableModels] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [statusMessage, setStatusMessage] = useState<string>("");
 
-  const [editingConfig, setEditingConfig] = useState<UnifiedConfig | null>(null);
+  const [editingConfig, setEditingConfig] = useState<UnifiedConfig | null>(
+    null
+  );
   const [isDialogOpen, setDialogOpen] = useState(false);
 
   const fetchConfigurations = useCallback(async () => {
@@ -41,10 +46,23 @@ export function useConfigManager(baseUrl: string) {
     }
   }, [baseUrl]);
 
+  const fetchAvailableModels = useCallback(async () => {
+    try {
+      const r = await fetch(`${baseUrl}/configuration/models`);
+      if (!r.ok) throw new Error("fetch failed");
+      const data = await r.json();
+      setAvailableModels(data);
+    } catch (e) {
+      console.error("Failed to fetch available models", e);
+      return [];
+    }
+  }, [baseUrl]);
+
   useEffect(() => {
     fetchConfigurations();
     fetchSimulations();
-  }, [fetchConfigurations, fetchSimulations]);
+    fetchAvailableModels();
+  }, [fetchConfigurations, fetchSimulations, fetchAvailableModels]);
 
   /** Open the add/edit configuration dialog. */
   const openDialog = (cfg?: UnifiedConfig) => {
@@ -95,14 +113,14 @@ export function useConfigManager(baseUrl: string) {
     try {
       const res = await fetch(
         `${baseUrl}/orchestrator/initialize/${encodeURIComponent(name)}`,
-        { method: 'POST' }
+        { method: "POST" }
       );
-      if (!res.ok) throw new Error(res.statusText || 'Initialize failed');
+      if (!res.ok) throw new Error(res.statusText || "Initialize failed");
       const data = await res.json();
       const simId = data.simulation_id || data.id;
-      if (!simId) throw new Error('No simulation ID returned');
+      if (!simId) throw new Error("No simulation ID returned");
       await fetchSimulations();
-      window.open(`/simulation/${simId}`, '_blank');
+      window.open(`/simulation/${simId}`, "_blank");
     } catch (err) {
       console.error("useConfigManager: launchConfig", err);
       setStatusMessage("Error launching simulation");
@@ -114,7 +132,7 @@ export function useConfigManager(baseUrl: string) {
     try {
       const res = await fetch(
         `${baseUrl}/configuration/${encodeURIComponent(name)}`,
-        { method: 'DELETE' }
+        { method: "DELETE" }
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || res.statusText);
@@ -128,7 +146,7 @@ export function useConfigManager(baseUrl: string) {
 
   /** Open an existing simulation in a new tab. */
   const openSimulation = (id: string) => {
-    window.open(`/simulation/${id}`, '_blank');
+    window.open(`/simulation/${id}`, "_blank");
   };
 
   /** Delete an active simulation. */
@@ -136,7 +154,7 @@ export function useConfigManager(baseUrl: string) {
     try {
       const res = await fetch(
         `${baseUrl}/simulation/${encodeURIComponent(id)}`,
-        { method: 'DELETE' }
+        { method: "DELETE" }
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || res.statusText);
@@ -150,6 +168,7 @@ export function useConfigManager(baseUrl: string) {
 
   return {
     configList,
+    availableModels,
     simList,
     statusMessage,
     editingConfig,
