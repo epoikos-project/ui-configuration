@@ -6,7 +6,21 @@ import { AgentProvider } from "@/app/provider/AgentProvider";
 import { Agent } from "@/types/Agent";
 import { Simulation } from "@/types/Simulation";
 import { World } from "@/types/World";
-import { Box, Button, FormControlLabel, Grid, Switch } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Container,
+  Card,
+  CardHeader,
+  CardContent,
+  FormControlLabel,
+  Switch,
+  Button,
+  Grid,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { startSimulation, stopSimulation, tickSimulation } from "./actions";
@@ -43,80 +57,77 @@ function App(props: SimProps) {
   }, [agents, setSelectedAgent]);
 
   return (
-    <Box id="app" sx={{ ml: 5 }}>
-      <Button variant="outlined" onClick={() => router.push('/')} sx={{ mb: 2 }}>
-        Back to Config
-      </Button>
-      <SimulationInfo {...props} />
-      <FormControlLabel
-        control={
-          <Switch
-            checked={debugEnabled}
-            onChange={() => {
-              if (!debugEnabled) {
-                phaserRef.current!.scene!.enableDebug();
-              } else {
-                phaserRef.current!.scene!.disableDebug();
-              }
-              setDebugEnabled(!debugEnabled);
-            }}
+    <>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton edge="start" color="inherit" onClick={() => router.push("/") }>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Simulation {props.simulation.id}
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={debugEnabled}
+                onChange={() => {
+                  if (!debugEnabled) {
+                    phaserRef.current!.scene!.enableDebug();
+                  } else {
+                    phaserRef.current!.scene!.disableDebug();
+                  }
+                  setDebugEnabled(!debugEnabled);
+                }}
+              />
+            }
+            label="Debug"
+            sx={{ color: "white" }}
           />
-        }
-        label="Debug Mode"
-      />
-      <Button
-        onClick={() => {
-          phaserRef.current!.scene!.resetCamera();
-        }}
-      >
-        Reset Camera
-      </Button>
-      <Grid container columns={2} spacing={2}>
-        <Grid>
-          <PhaserSimulation ref={phaserRef} {...props} />
+          <Button color="inherit" onClick={() => phaserRef.current!.scene!.resetCamera()}>
+            Reset Camera
+          </Button>
+        </Toolbar>
+      </AppBar>
+      <Container sx={{ mt: 2 }}>
+        <Grid container spacing={2}>
+          {/* Simulation info + controls */}
+          <Grid size={6}>
+            <SimulationInfo {...props} />
+
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <PhaserSimulation ref={phaserRef} {...props} />
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Agent info */}
+          <Grid size={3}>
+            {selectedAgent ? (
+              <AgentProvider agent={selectedAgent}>
+                <AgentInfo />
+              </AgentProvider>
+            ) : (
+              <Card>
+                <CardContent>
+                  <Typography>No agent selected</Typography>
+                </CardContent>
+              </Card>
+            )}
+          </Grid>
+
+          {/* Event timeline */}
+          <Grid size={3}>
+            <Card>
+              <CardHeader title="Event Timeline" />
+              <CardContent>
+                {/* TODO: Insert MUI Timeline component to show events */}
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-        <Grid>
-          {selectedAgent ? (
-            <AgentProvider agent={selectedAgent}>
-              <AgentInfo />
-            </AgentProvider>
-          ) : (
-            <div>No agent selected</div>
-          )}
-        </Grid>
-      </Grid>
-      <Box sx={{ mt: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            startSimulation(props.simulation.id);
-          }}
-        >
-          Start Simulation
-        </Button>
-        <Button
-          sx={{ ml: 2 }}
-          variant="outlined"
-          color="primary"
-          onClick={() => {
-            tickSimulation(props.simulation.id);
-          }}
-        >
-          Tick Simulation Once
-        </Button>
-        <Button
-          variant="contained"
-          color="error"
-          onClick={() => {
-            stopSimulation(props.simulation.id);
-          }}
-          sx={{ ml: 2 }}
-        >
-          Stop Simulation
-        </Button>
-      </Box>
-    </Box>
+      </Container>
+    </>
   );
 }
 
