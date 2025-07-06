@@ -14,14 +14,24 @@ export function useConfigManager(baseUrl: string) {
   const [simList, setSimList] = useState<Simulation[]>([]);
   const [statusMessage, setStatusMessage] = useState<string>("");
 
-  const [editingConfig, setEditingConfig] = useState<UnifiedConfig | null>(null);
+  const [editingConfig, setEditingConfig] = useState<UnifiedConfig | null>(
+    null
+  );
   const [isDialogOpen, setDialogOpen] = useState(false);
 
   const fetchConfigurations = useCallback(async () => {
     try {
       const res = await fetch(`${baseUrl}/configuration/`);
       if (!res.ok) throw new Error(res.statusText || "Fetch failed");
-      setConfigList(await res.json());
+      const data = await res.json();
+      const sorted = Array.isArray(data)
+        ? data.slice().sort((a, b) => {
+            const aTime = new Date(a.last_used).getTime();
+            const bTime = new Date(b.last_used).getTime();
+            return bTime - aTime;
+          })
+        : [];
+      setConfigList(sorted);
     } catch (err) {
       console.error("useConfigManager: fetchConfigurations", err);
       setStatusMessage("Failed to fetch configurations");
@@ -33,7 +43,14 @@ export function useConfigManager(baseUrl: string) {
       const res = await fetch(`${baseUrl}/simulation/`);
       if (!res.ok) throw new Error(res.statusText || "Fetch failed");
       const data = await res.json();
-      setSimList(Array.isArray(data) ? data : []);
+      const sorted = Array.isArray(data)
+        ? data.slice().sort((a, b) => {
+            const aTime = new Date(a.last_used).getTime();
+            const bTime = new Date(b.last_used).getTime();
+            return bTime - aTime;
+          })
+        : [];
+      setSimList(sorted);
     } catch (err) {
       console.error("useConfigManager: fetchSimulations", err);
       setStatusMessage("Failed to fetch simulations");
@@ -95,14 +112,14 @@ export function useConfigManager(baseUrl: string) {
     try {
       const res = await fetch(
         `${baseUrl}/orchestrator/initialize/${encodeURIComponent(name)}`,
-        { method: 'POST' }
+        { method: "POST" }
       );
-      if (!res.ok) throw new Error(res.statusText || 'Initialize failed');
+      if (!res.ok) throw new Error(res.statusText || "Initialize failed");
       const data = await res.json();
       const simId = data.simulation_id || data.id;
-      if (!simId) throw new Error('No simulation ID returned');
+      if (!simId) throw new Error("No simulation ID returned");
       await fetchSimulations();
-      window.open(`/simulation/${simId}`, '_blank');
+      window.open(`/simulation/${simId}`, "_blank");
     } catch (err) {
       console.error("useConfigManager: launchConfig", err);
       setStatusMessage("Error launching simulation");
@@ -114,7 +131,7 @@ export function useConfigManager(baseUrl: string) {
     try {
       const res = await fetch(
         `${baseUrl}/configuration/${encodeURIComponent(name)}`,
-        { method: 'DELETE' }
+        { method: "DELETE" }
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || res.statusText);
@@ -128,7 +145,7 @@ export function useConfigManager(baseUrl: string) {
 
   /** Open an existing simulation in a new tab. */
   const openSimulation = (id: string) => {
-    window.open(`/simulation/${id}`, '_blank');
+    window.open(`/simulation/${id}`, "_blank");
   };
 
   /** Delete an active simulation. */
@@ -136,7 +153,7 @@ export function useConfigManager(baseUrl: string) {
     try {
       const res = await fetch(
         `${baseUrl}/simulation/${encodeURIComponent(id)}`,
-        { method: 'DELETE' }
+        { method: "DELETE" }
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || res.statusText);
