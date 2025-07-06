@@ -125,7 +125,7 @@ export class Home extends Scene {
     this.cameraIsFollowingSprite = false;
     this.resetAgentSelection();
     this.cameras.main.stopFollow();
-    this.cameras.main.setZoom(1);
+    this.cameras.main.setZoom(0.8);
     this.cameras.main.centerOn(
       0.5 * (this.game.config.width as number),
       0.5 * (this.game.config.height as number)
@@ -272,10 +272,9 @@ export class Home extends Scene {
     );
 
     this.playerSprite = this.add.sprite(0, 0, "fluffy");
-    this.cameras.main.centerOn(
-      0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number)
-    );
+    const mapWidth = this.tilemap.widthInPixels;
+    const mapHeight = this.tilemap.heightInPixels;
+    this.cameras.main.centerOn(mapWidth / 2, mapHeight / 2);
     const gridEngineConfig: GridEngineConfig = {
       characters: this.agents.map((agent) => {
         const sprite = this.createSprite(agent);

@@ -114,10 +114,6 @@ function App(props: SimProps) {
         <Grid
           container
           spacing={2}
-          sx={{
-            minHeight: 0,
-            mb: 0,
-          }}
         >
           {/* Left column */}
           <Grid
@@ -125,7 +121,7 @@ function App(props: SimProps) {
             sx={{
               display: "flex",
               flexDirection: "column",
-              height: "100%",
+ 
             }}
           >
             <Card sx={{ mb: 2 }}>
@@ -133,25 +129,12 @@ function App(props: SimProps) {
                 <PhaserSimulation ref={phaserRef} {...props} />
               </CardContent>
             </Card>
-            <Box
-              sx={{
-                flex: 1,
-                height: "100%",
-                minHeight: 0,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-start",
-                overflowY: "auto",
-              }}
-            >
               <SimulationInfo {...props} />
-            </Box>
           </Grid>
           {/* Right column: Agent info */}
           <Grid
             size={agentInfoWidth}
             sx={{
-              height: "80vh",
               display: "flex",
               flexDirection: "column",
               minWidth: 340,
@@ -179,7 +162,7 @@ function App(props: SimProps) {
               )}
             </Card>
           </Grid>
-          <Grid size={12} sx={{ height: "100%" }}>
+          <Grid size={8} sx={{ height: "100%" }}>
             <Box sx={{ height: "100%", minHeight: 0 }}>
               <NatsDebugLog simId={props.simulation.id} />
             </Box>

@@ -42,7 +42,7 @@ export default function NatsDebugLog({ simId }: { simId: string }) {
       <CardHeader title="Log" />
       <CardContent sx={{ maxHeight: 300, overflowY: "auto" }}>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          No Logs yet. This will show all incoming NATS messages for this simulation.
+          This will show all incoming NATS messages for this simulation.
         </Typography>
         {logs.map((l, i) => (
           <Box key={i} mb={1}>
