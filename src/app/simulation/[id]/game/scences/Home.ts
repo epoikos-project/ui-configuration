@@ -265,8 +265,8 @@ export class Home extends Scene {
       row.forEach((tile) => {
         if (tile.index === 8 || tile.index === 9) {
           console.log(tile.index);
-          tile.properties = { ge_collide: true };
-          tile.setCollision(true);
+          // tile.properties = { ge_collide: true };
+          // tile.setCollision(true);
         }
       })
     );

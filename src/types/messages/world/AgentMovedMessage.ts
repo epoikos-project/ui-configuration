@@ -5,4 +5,5 @@ export interface AgentMovedMessage extends WorldBaseMessage {
   start_location: [number, number];
   destination: [number, number];
   num_steps: number;
+  new_energy_level: number;
 }

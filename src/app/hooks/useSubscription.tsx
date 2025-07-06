@@ -4,15 +4,16 @@ import { useNats } from "./useNats";
 
 export const useSubscription = (
   subject: string,
-  onMessage: (msg: Msg) => void,
+  onMessage: (msg: Msg) => void
 ) => {
   const nc = useNats();
 
   useEffect(() => {
     if (!nc) return;
 
+    const sub = nc.subscribe(subject);
+
     const subscribe = async () => {
-      const sub = nc.subscribe(subject);
       try {
         for await (const m of sub) {
           onMessage(m);
@@ -28,6 +29,7 @@ export const useSubscription = (
     return () => {
       // No direct way to unsubscribe in @nats-io/nats-core yet,
       // but we could drain the connection or filter messages manually.
+      sub.unsubscribe();
     };
-  }, [nc, subject]);
+  }, [nc, onMessage, subject]);
 };

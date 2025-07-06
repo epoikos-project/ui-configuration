@@ -1,9 +1,17 @@
 import { Card, CardHeader, CardContent, Typography, Box } from "@mui/material";
 import { useAgent } from "../hooks/useAgent";
 import { RelationshipGraph } from "./RelationshipGraph";
+import { useEffect } from "react";
 
 export function AgentInfo() {
-  const { agent } = useAgent();
+  const { agent, refresh } = useAgent();
+
+  useEffect(() => {
+    // Revalidate the agent data when this component mounts
+    if (agent.id !== "") {
+      refresh();
+    }
+  }, []);
 
   return (
     <Card
@@ -21,7 +29,10 @@ export function AgentInfo() {
         <Typography variant="body2">Hunger: {agent.hunger}</Typography>
         <Typography variant="body2">Energy: {agent.energy_level}</Typography>
         <Typography variant="body2">
-          Coordinates: <strong>{agent.x_coord}, {agent.y_coord}</strong>
+          Coordinates:{" "}
+          <strong>
+            {agent.x_coord}, {agent.y_coord}
+          </strong>
         </Typography>
         <Typography variant="body2">
           Visibility Range: {agent.visibility_range}

@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { Agent } from "@/types/Agent";
+import type { Metadata } from "next";
 import Wrapper from "./wrapper";
 
 export const metadata: Metadata = {
@@ -21,7 +21,8 @@ export default async function Home({
   const data = await fetch(`http://localhost:8000/simulation/${id}`);
   const worldData = await fetch(`http://localhost:8000/simulation/${id}/world`);
   const agentsData = await fetch(
-    `http://localhost:8000/simulation/${id}/agent`
+    `http://localhost:8000/simulation/${id}/agent`,
+    { next: { tags: ["agents"] } }
   );
   const sim = await data.json();
   const world = await worldData.json();
