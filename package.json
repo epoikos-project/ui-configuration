@@ -16,6 +16,7 @@
     "@nats-io/nats-core": "^3.0.2",
     "@xyflow/react": "^12.6.0",
     "grid-engine": "^2.48.0",
+    "nats.ws": "^1.30.3",
     "next": "15.3.3",
     "phaser": "^3.88.2",
     "react": "^19.0.0",

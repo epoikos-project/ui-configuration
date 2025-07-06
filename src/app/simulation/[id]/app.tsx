@@ -13,17 +13,17 @@ import {
   Typography,
   Container,
   Card,
-  CardHeader,
   CardContent,
   FormControlLabel,
   Switch,
   Button,
+  Box,
   Grid,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { startSimulation, stopSimulation, tickSimulation } from "./actions";
+import NatsDebugLog from "@/app/components/NatsDebugLog";
 import { EventBus } from "./game/EventBus";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
 import { Home } from "./game/scences/Home";
@@ -35,17 +35,14 @@ export interface SimProps {
   agents: Agent[];
   resources: Resource[];
 }
+
 function App(props: SimProps) {
   const router = useRouter();
-  //  References to the PhaserGame component (game and scene are exposed)
   const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
-
   const { agents } = useAgents();
+  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
 
-  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(
-    undefined
-  );
   useEffect(() => {
     const listener = (agent: Agent) => {
       setSelectedAgent(agents.find((a) => a.id === agent.id));
@@ -56,11 +53,14 @@ function App(props: SimProps) {
     };
   }, [agents, setSelectedAgent]);
 
+  // Define the width for AgentInfo column
+  const agentInfoWidth = { xs: 12, md: 4 }; // 1/3 on desktop, full width on mobile
+
   return (
     <>
       <AppBar position="static">
         <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={() => router.push("/") }>
+          <IconButton edge="start" color="inherit" onClick={() => router.push("/")}>
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -88,42 +88,105 @@ function App(props: SimProps) {
           </Button>
         </Toolbar>
       </AppBar>
-      <Container sx={{ mt: 2 }}>
-        <Grid container spacing={2}>
-          {/* Simulation info + controls */}
-          <Grid size={6}>
-            <SimulationInfo {...props} />
-
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
+      <Container
+        disableGutters
+        maxWidth={false}
+        sx={{
+          mt: 0,
+          px: 0,
+          width: "100vw",
+          maxWidth: "100vw",
+          height: "calc(100vh - 4rem)",
+          display: "flex",
+          flexDirection: "column",
+          p: "2rem",
+          boxSizing: "border-box",
+        }}
+      >
+        <Grid
+          container
+          spacing={2}
+          sx={{
+            flex: "0 0 75%",
+            height: "75%",
+            minHeight: 0,
+            mb: 0,
+          }}
+        >
+          {/* Left column */}
+          <Grid
+            size={{ xs: 12, md: 8 }} // 2/3 width on desktop, full width on mobile
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+            }}
+          >
+            <Card sx={{ mb: 2 }}>
+              <CardContent sx={{ p: 3 }}>
                 <PhaserSimulation ref={phaserRef} {...props} />
               </CardContent>
             </Card>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-start",
+                overflowY: "auto",
+              }}
+            >
+              <SimulationInfo {...props} />
+            </Box>
           </Grid>
-
-          {/* Agent info */}
-          <Grid size={3}>
-            {selectedAgent ? (
-              <AgentProvider agent={selectedAgent}>
-                <AgentInfo />
-              </AgentProvider>
-            ) : (
-              <Card>
-                <CardContent>
+          {/* Right column: Agent info */}
+          <Grid
+            size={agentInfoWidth}
+            sx={{
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              minWidth: 340,
+              maxWidth: 420,
+            }}
+          >
+            <Card
+              sx={{
+                flex: 1,
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: selectedAgent ? "stretch" : "center",
+                justifyContent: selectedAgent ? "flex-start" : "center",
+              }}
+            >
+              {selectedAgent ? (
+                <AgentProvider agent={selectedAgent}>
+                  <AgentInfo />
+                </AgentProvider>
+              ) : (
+                <CardContent sx={{ width: "100%", textAlign: "center" }}>
                   <Typography>No agent selected</Typography>
                 </CardContent>
-              </Card>
-            )}
-          </Grid>
-
-          {/* Event timeline */}
-          <Grid size={3}>
-            <Card>
-              <CardHeader title="Event Timeline" />
-              <CardContent>
-                {/* TODO: Insert MUI Timeline component to show events */}
-              </CardContent>
+              )}
             </Card>
+          </Grid>
+        </Grid>
+        {/* Debug log row unchanged */}
+        <Grid
+          container
+          sx={{
+            flex: "0 0 25%",
+            height: "25%",
+            minHeight: 0,
+            mt: 0,
+          }}
+        >
+          <Grid size={12} sx={{ height: "100%" }}>
+            <Box sx={{ height: "100%", minHeight: 0 }}>
+              <NatsDebugLog simId={props.simulation.id} />
+            </Box>
           </Grid>
         </Grid>
       </Container>

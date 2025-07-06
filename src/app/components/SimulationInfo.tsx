@@ -8,7 +8,7 @@ export function SimulationInfo(props: SimProps) {
   const { simulation } = useSimulation();
 
   return (
-    <Card variant="outlined">
+    <Card variant="outlined" sx={{ width: "100%" }}>
       <CardHeader
         title={`Simulation ${simulation.id}`}
         subheader={`Running: ${simulation.running.toString()}`}
