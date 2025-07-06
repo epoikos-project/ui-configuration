@@ -41,7 +41,9 @@ function App(props: SimProps) {
   const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const { agents } = useAgents();
-  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const listener = (agent: Agent) => {
@@ -60,7 +62,11 @@ function App(props: SimProps) {
     <>
       <AppBar position="static">
         <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={() => router.push("/")}>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={() => router.push("/")}
+          >
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -83,7 +89,10 @@ function App(props: SimProps) {
             label="Debug"
             sx={{ color: "white" }}
           />
-          <Button color="inherit" onClick={() => phaserRef.current!.scene!.resetCamera()}>
+          <Button
+            color="inherit"
+            onClick={() => phaserRef.current!.scene!.resetCamera()}
+          >
             Reset Camera
           </Button>
         </Toolbar>
@@ -96,7 +105,6 @@ function App(props: SimProps) {
           px: 0,
           width: "100vw",
           maxWidth: "100vw",
-          height: "calc(100vh - 4rem)",
           display: "flex",
           flexDirection: "column",
           p: "2rem",
@@ -107,8 +115,6 @@ function App(props: SimProps) {
           container
           spacing={2}
           sx={{
-            flex: "0 0 75%",
-            height: "75%",
             minHeight: 0,
             mb: 0,
           }}
@@ -130,6 +136,7 @@ function App(props: SimProps) {
             <Box
               sx={{
                 flex: 1,
+                height: "100%",
                 minHeight: 0,
                 display: "flex",
                 flexDirection: "column",
@@ -144,7 +151,7 @@ function App(props: SimProps) {
           <Grid
             size={agentInfoWidth}
             sx={{
-              height: "100%",
+              height: "80vh",
               display: "flex",
               flexDirection: "column",
               minWidth: 340,
@@ -172,23 +179,13 @@ function App(props: SimProps) {
               )}
             </Card>
           </Grid>
-        </Grid>
-        {/* Debug log row unchanged */}
-        <Grid
-          container
-          sx={{
-            flex: "0 0 25%",
-            height: "25%",
-            minHeight: 0,
-            mt: 0,
-          }}
-        >
           <Grid size={12} sx={{ height: "100%" }}>
             <Box sx={{ height: "100%", minHeight: 0 }}>
               <NatsDebugLog simId={props.simulation.id} />
             </Box>
           </Grid>
         </Grid>
+        {/* Debug log row unchanged */}
       </Container>
     </>
   );

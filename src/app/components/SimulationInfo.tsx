@@ -1,7 +1,19 @@
-import { Card, CardHeader, CardContent, CardActions, Button, Grid, Typography } from "@mui/material";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardActions,
+  Button,
+  Grid,
+  Typography,
+} from "@mui/material";
 import { SimProps } from "../simulation/[id]/app";
 import { useSimulation } from "../hooks/useSimulation";
-import { startSimulation, stopSimulation, tickSimulation } from "../simulation/[id]/actions";
+import {
+  startSimulation,
+  stopSimulation,
+  tickSimulation,
+} from "../simulation/[id]/actions";
 
 export function SimulationInfo(props: SimProps) {
   const { world, agents } = props;
@@ -12,7 +24,7 @@ export function SimulationInfo(props: SimProps) {
       <CardHeader
         title={`Simulation ${simulation.id}`}
         subheader={`Running: ${simulation.running.toString()}`}
-      />  
+      />
       <CardContent>
         <Grid container spacing={1}>
           <Grid size={6}>
