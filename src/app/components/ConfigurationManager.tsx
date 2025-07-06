@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   TableRow,
   Tabs,
   Tab,
-} from '@mui/material';
+} from "@mui/material";
 
 const BASEURL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -40,7 +40,7 @@ export type Configuration = {
   id: string;
   name: string;
   agents: AgentType[];
-  settings: { 
+  settings: {
     world?: WorldConfigType;
     [key: string]: unknown;
   };
@@ -54,7 +54,9 @@ type Props = {
   onLoad: (config: Configuration) => void;
 };
 
-function TabPanel(props: React.PropsWithChildren<{ value: number, index: number }>) {
+function TabPanel(
+  props: React.PropsWithChildren<{ value: number; index: number }>
+) {
   const { children, value, index, ...other } = props;
   return (
     <div
@@ -74,10 +76,11 @@ const ConfigurationManager: React.FC<Props> = ({
   currentWorldConfig,
   configName,
   setConfigName,
-  onLoad
+  onLoad,
 }) => {
-  const [loadStatus, setLoadStatus] = useState('');
+  const [loadStatus, setLoadStatus] = useState("");
   const [configList, setConfigList] = useState<Configuration[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [simList, setSimList] = useState<{ id: string }[]>([]);
   const [tab, setTab] = useState(0);
 
@@ -105,9 +108,21 @@ const ConfigurationManager: React.FC<Props> = ({
     }
   };
 
+  const fetchAvailableModels = async () => {
+    try {
+      const r = await fetch(`${BASEURL}/configuration/models`);
+      if (!r.ok) throw new Error("fetch failed");
+      setAvailableModels(await r.json());
+    } catch (e) {
+      console.error("Failed to fetch available models", e);
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchConfigurations();
     fetchSimulations();
+    fetchAvailableModels();
   }, []);
 
   const handleSaveConfiguration = async () => {
@@ -121,13 +136,13 @@ const ConfigurationManager: React.FC<Props> = ({
         name: configName,
         agents: currentAgents,
         settings: {
-          world: currentWorldConfig
+          world: currentWorldConfig,
         },
       };
 
       const response = await fetch(`${BASEURL}/configuration`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await response.json();
@@ -141,7 +156,9 @@ const ConfigurationManager: React.FC<Props> = ({
 
   const handleLoadConfiguration = async (name: string) => {
     try {
-      const response = await fetch(`${BASEURL}/configuration/${encodeURIComponent(name)}`);
+      const response = await fetch(
+        `${BASEURL}/configuration/${encodeURIComponent(name)}`
+      );
       if (!response.ok) {
         setLoadStatus("Configuration not found");
         return;
@@ -151,7 +168,7 @@ const ConfigurationManager: React.FC<Props> = ({
         id: data.id || Date.now().toString(),
         name: data.name,
         agents: data.agents || [],
-        settings: data.settings || {}
+        settings: data.settings || {},
       };
       setLoadStatus(`Configuration '${name}' loaded successfully.`);
       onLoad(config);
@@ -162,9 +179,12 @@ const ConfigurationManager: React.FC<Props> = ({
 
   const handleDeleteConfiguration = async (name: string) => {
     try {
-      const response = await fetch(`${BASEURL}/configuration/${encodeURIComponent(name)}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `${BASEURL}/configuration/${encodeURIComponent(name)}`,
+        {
+          method: "DELETE",
+        }
+      );
       const data = await response.json();
       setLoadStatus(data.message || "Configuration deleted successfully!");
       fetchConfigurations();
@@ -175,20 +195,23 @@ const ConfigurationManager: React.FC<Props> = ({
 
   const handleCreateConfiguration = async (name: string) => {
     if (!name.trim()) {
-      alert("Please provide a configuration name before creating a simulation.");
+      alert(
+        "Please provide a configuration name before creating a simulation."
+      );
       return;
     }
     try {
       const response = await fetch(
         `${BASEURL}/orchestrator/initialize/${encodeURIComponent(name)}`,
-        { method: 'POST' }
+        { method: "POST" }
       );
-      if (!response.ok) throw new Error(response.statusText || 'Initialization failed');
+      if (!response.ok)
+        throw new Error(response.statusText || "Initialization failed");
       const data = await response.json();
       const simId = data.id || data.simulation_id;
-      if (!simId) throw new Error('No simulation ID returned');
+      if (!simId) throw new Error("No simulation ID returned");
       setLoadStatus(`Simulation initialized (ID: ${simId}).`);
-      window.open(`/simulation/${simId}`, '_blank');
+      window.open(`/simulation/${simId}`, "_blank");
     } catch (error) {
       setLoadStatus("Error creating simulation");
     }
@@ -196,9 +219,12 @@ const ConfigurationManager: React.FC<Props> = ({
 
   const handleDeleteSimulation = async (id: string) => {
     try {
-      const response = await fetch(`${BASEURL}/simulation/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `${BASEURL}/simulation/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+        }
+      );
       const data = await response.json();
       setLoadStatus(data.message || "Simulation deleted successfully!");
       fetchSimulations();
@@ -214,7 +240,13 @@ const ConfigurationManager: React.FC<Props> = ({
       </Typography>
       <Box display="flex" flexDirection="row" alignItems="flex-start" gap={2}>
         <Box sx={{ flex: 1 }}>
-          <Box display="flex" flexDirection="row" alignItems="center" gap={2} mb={2}>
+          <Box
+            display="flex"
+            flexDirection="row"
+            alignItems="center"
+            gap={2}
+            mb={2}
+          >
             <TextField
               label="Configuration Name"
               value={configName}
@@ -234,20 +266,35 @@ const ConfigurationManager: React.FC<Props> = ({
             <Button variant="contained" onClick={handleSaveConfiguration}>
               Save Config
             </Button>
-            <Button variant="contained" onClick={() => handleLoadConfiguration(configName)}>
+            <Button
+              variant="contained"
+              onClick={() => handleLoadConfiguration(configName)}
+            >
               Load Config
             </Button>
-            <Button variant="contained" onClick={() => handleCreateConfiguration(configName)}>
+            <Button
+              variant="contained"
+              onClick={() => handleCreateConfiguration(configName)}
+            >
               Create Simulation
             </Button>
-            <Button variant="contained" color="error" onClick={() => handleDeleteConfiguration(configName)}>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => handleDeleteConfiguration(configName)}
+            >
               Delete Config
             </Button>
           </Box>
         </Box>
-        <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ flex: 2, display: "flex", flexDirection: "column", gap: 2 }}>
           <Paper elevation={2} sx={{ p: 2 }}>
-            <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="fullWidth" sx={{ mb: 2 }}>
+            <Tabs
+              value={tab}
+              onChange={(_, v) => setTab(v)}
+              variant="fullWidth"
+              sx={{ mb: 2 }}
+            >
               <Tab label="Configurations" />
               <Tab label="Simulations" />
             </Tabs>
@@ -273,17 +320,21 @@ const ConfigurationManager: React.FC<Props> = ({
                       <TableRow key={config.id}>
                         <TableCell>{config.id}</TableCell>
                         <TableCell>{config.name}</TableCell>
-                        <TableCell>{config.agents?.length || 0} types</TableCell>
+                        <TableCell>
+                          {config.agents?.length || 0} types
+                        </TableCell>
                         <TableCell>
                           {config.settings?.world?.size
                             ? `${config.settings.world.size[0]}x${config.settings.world.size[1]}`
-                            : 'Not defined'}
+                            : "Not defined"}
                         </TableCell>
                         <TableCell align="center">
                           <Button
                             variant="outlined"
                             size="small"
-                            onClick={() => handleCreateConfiguration(config.name)}
+                            onClick={() =>
+                              handleCreateConfiguration(config.name)
+                            }
                             sx={{ mr: 1 }}
                           >
                             Create
@@ -300,7 +351,9 @@ const ConfigurationManager: React.FC<Props> = ({
                             variant="outlined"
                             size="small"
                             color="error"
-                            onClick={() => handleDeleteConfiguration(config.name)}
+                            onClick={() =>
+                              handleDeleteConfiguration(config.name)
+                            }
                           >
                             Delete
                           </Button>
@@ -345,7 +398,9 @@ const ConfigurationManager: React.FC<Props> = ({
                           <Button
                             variant="outlined"
                             size="small"
-                            onClick={() => window.open(`/simulation/${sim.id}`, '_blank')}
+                            onClick={() =>
+                              window.open(`/simulation/${sim.id}`, "_blank")
+                            }
                             sx={{ mr: 1 }}
                           >
                             Open
