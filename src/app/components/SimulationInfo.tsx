@@ -20,3 +20,4 @@ export function SimulationInfo(props: SimProps) {
       <h3>Agents: {agents.length}</h3>
     </div>
   )
+}

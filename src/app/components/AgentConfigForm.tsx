@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -60,6 +60,17 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
     MANDATORY.map((n) => ({ name: n, spec: { type: "fixed", value: 0 } })),
   );
   const [errors, setErrors] = useState<string[]>([]);
+
+  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/configuration/models", {
+      headers: { accept: "application/json" },
+    })
+      .then((res) => res.json())
+      .then(setAvailableModels)
+      .catch((err) => console.error("Failed to fetch models:", err));
+  }, []);
 
   const reset = () => {
     setEditing(null);
@@ -319,18 +330,11 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
             value={model}
             onChange={(e) => setModel(e.target.value as string)}
           >
-            <MenuItem value="llama-3.1-8b-instruct">
-              llama-3.1-8b-instruct
-            </MenuItem>
-            <MenuItem value="llama-3.3-70b-instruct">
-              llama-3.3-70b-instruct
-            </MenuItem>
-            <MenuItem value="gpt-4o-mini-2024-07-18">
-              gpt-4o-mini-2024-07-18
-            </MenuItem>
-            <MenuItem value="o4-mini-2025-04-16">
-              o4-mini-2025-04-16
-            </MenuItem>
+            {availableModels.map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.name}
+              </MenuItem>
+            ))}
           </Select>
         </Box>
         <TextField
