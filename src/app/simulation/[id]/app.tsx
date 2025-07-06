@@ -1,4 +1,4 @@
-"use client";
+import { useRef, useEffect, useState } from "react";
 import { AgentInfo } from "@/app/components/AgentInfo";
 import { SimulationInfo } from "@/app/components/SimulationInfo";
 import { useAgents } from "@/app/hooks/useAgents";
@@ -22,7 +22,6 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import NatsDebugLog from "@/app/components/NatsDebugLog";
 import { EventBus } from "./game/EventBus";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
@@ -39,11 +38,9 @@ export interface SimProps {
 function App(props: SimProps) {
   const router = useRouter();
   const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
-  const [debugEnabled, setDebugEnabled] = useState(false);
   const { agents } = useAgents();
-  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(
-    undefined
-  );
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
 
   useEffect(() => {
     const listener = (agent: Agent) => {
@@ -111,25 +108,59 @@ function App(props: SimProps) {
           boxSizing: "border-box",
         }}
       >
-        <Grid
-          container
-          spacing={2}
-        >
+        <Grid container spacing={2}>
           {/* Left column */}
           <Grid
-            size={{ xs: 12, md: 8 }} // 2/3 width on desktop, full width on mobile
+            size={{ xs: 12, md: 8 }}
             sx={{
               display: "flex",
               flexDirection: "column",
- 
             }}
           >
-            <Card sx={{ mb: 2 }}>
-              <CardContent sx={{ p: 3 }}>
-                <PhaserSimulation ref={phaserRef} {...props} />
+            {/* Simulation Card with Fixed Size */}
+            <Card
+              sx={{
+                mb: 2,
+                width: "100%",
+
+                mx: "auto", // center card horizontally
+                minHeight: "300px", // can tweak
+                boxShadow: 2,
+                p: 2, // card padding
+              }}
+            >
+              <CardContent
+                sx={{
+                  p: 0,
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  id="game-container"
+                  sx={{
+                    width: "100%",
+                    height: "512px", // or a prop
+                    minHeight: "300px",
+                    mx: "auto",
+                    backgroundColor: "#103014",
+                    borderRadius: 2,
+                    boxShadow: 1,
+                    overflow: "hidden",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <PhaserSimulation ref={phaserRef} {...props} />
+                </Box>
               </CardContent>
             </Card>
-              <SimulationInfo {...props} />
+            <SimulationInfo {...props} />
           </Grid>
           {/* Right column: Agent info */}
           <Grid
@@ -162,13 +193,14 @@ function App(props: SimProps) {
               )}
             </Card>
           </Grid>
-          <Grid size={8} sx={{ height: "100%" }}>
-            <Box sx={{ height: "100%", minHeight: 0 }}>
-              <NatsDebugLog simId={props.simulation.id} />
-            </Box>
-          </Grid>
+          {debugEnabled && (
+            <Grid size={8} sx={{ height: "100%" }}>
+              <Box sx={{ height: "100%", minHeight: 0 }}>
+                <NatsDebugLog simId={props.simulation.id} />
+              </Box>
+            </Grid>
+          )}
         </Grid>
-        {/* Debug log row unchanged */}
       </Container>
     </>
   );
