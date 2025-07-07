@@ -17,7 +17,6 @@ export function RelationshipGraph() {
   useEffect(() => {
     async function fetchGraph() {
       const params = new URLSearchParams();
-      params.set("tick", String(simulation.tick ?? 0));
       params.set("agent_id", agent.id);
       const url = `http://localhost:8000/simulation/${simulation.id}/relationship_graph?${params}`;
       try {
