@@ -1,6 +1,8 @@
 "use client";
 
 import React from 'react';
+import ResourceConfigForm from './ResourceConfigForm';
+import type { ResourceConfig } from './LiveJsonEditor';
 import {
   Box,
   Paper,
@@ -18,6 +20,8 @@ type WorldConfigProps = {
   setNumRegions: (regions: number) => void;
   totalResources: number;
   setTotalResources: (resources: number) => void;
+  resourceSettings: ResourceConfig[];
+  setResourceSettings: (r: ResourceConfig[]) => void;
 };
 
 const WorldConfig: React.FC<WorldConfigProps> = ({
@@ -28,7 +32,9 @@ const WorldConfig: React.FC<WorldConfigProps> = ({
   numRegions,
   setNumRegions,
   totalResources,
-  setTotalResources
+  setTotalResources,
+  resourceSettings,
+  setResourceSettings,
 }) => {
   return (
     <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
@@ -102,6 +108,11 @@ const WorldConfig: React.FC<WorldConfigProps> = ({
           World size: {worldWidth}x{worldHeight}, {numRegions} regions, {totalResources} total resources
         </Typography>
       </Box>
+      {/* Resource configuration section */}
+      <ResourceConfigForm
+        resources={resourceSettings}
+        setResources={setResourceSettings}
+      />
     </Paper>
   );
 };

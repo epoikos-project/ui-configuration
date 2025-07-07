@@ -8,20 +8,30 @@ import type { AgentType } from "./AgentConfigForm";
 /**
  * Slice of state kept in Page for world settings
  */
+export interface ResourceConfig {
+  name: string;
+  count: number;
+  minAgents: number;
+  miningTime: number;
+  energyYield: number;
+}
+
 export type WorldConfigState = {
   size: [number, number];
   num_regions: number;
   total_resources: number;
+  resources?: ResourceConfig[];
 };
 
 type Props = {
   agents: AgentType[];
   setAgents: (a: AgentType[]) => void;
   world: WorldConfigState;
-  /**
-   * Optional – if supplied, the user can paste new world settings in JSON
-   */
+  /** Optional – if supplied, the user can paste new world settings in JSON */
   setWorld?: (w: WorldConfigState) => void;
+  /** Optional – if supplied, sync resource configs in JSON */
+  resources?: ResourceConfig[];
+  setResources?: (r: ResourceConfig[]) => void;
 };
 
 const LiveJsonEditor: React.FC<Props> = ({
@@ -31,7 +41,10 @@ const LiveJsonEditor: React.FC<Props> = ({
   setWorld,
 }) => {
   /** Shape that mirrors what /configuration expects (minus id & name) */
-  const compose = () => ({ agents, settings: { world } });
+  const compose = () => ({
+    agents,
+    settings: { world: { ...world, resources: resources ?? [] } },
+  });
 
   const [jsonText, setJsonText] = useState(
     JSON.stringify(compose(), null, 2)
@@ -58,6 +71,13 @@ const LiveJsonEditor: React.FC<Props> = ({
         setWorld !== undefined
       ) {
         setWorld(parsed.settings.world as WorldConfigState);
+      }
+      if (
+        !Array.isArray(parsed) &&
+        parsed.settings?.world?.resources &&
+        setResources !== undefined
+      ) {
+        setResources(parsed.settings.world.resources as ResourceConfig[]);
       }
 
       setError(null);
