@@ -134,7 +134,7 @@ export function AgentInfo() {
             </Box>
           )}
           {tab === 1 && (
-            <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
+            <Box sx={{ maxHeight: 500, overflowY: "auto" }}>
               {actionLogs.map((l, i) => (
                 <Box key={i} mb={1}>
                   <Typography variant="caption" color="text.secondary">
