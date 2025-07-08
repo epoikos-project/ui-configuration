@@ -13,16 +13,7 @@ import { useAgent } from "../hooks/useAgent";
 import { useSimulation } from "../hooks/useSimulation";
 import { RelationshipGraph } from "./RelationshipGraph";
 import { useEffect, useState } from "react";
-import { useSubscription } from "../hooks/useSubscription";
-import { Agent } from "../../types/Agent";
-import { Message } from "../../types/Message";
-import { ActionLog } from "../../types/ActionLog";
-
-interface LogEntry {
-  timestamp: number;
-  subject: string;
-  payload: string;
-}
+import { useAgentLogs } from "@/app/provider/AgentLogsProvider";
 
 export function AgentInfo() {
   const { agent, refresh, moveTo } = useAgent();
@@ -31,13 +22,14 @@ export function AgentInfo() {
     x: agent.x_coord,
     y: agent.y_coord,
   });
-  const [messageLogs, setMessageLogs] = useState<Message[]>(
-    agent.last_10_messages || []
-  );
-  const [actionLogs, setActionLogs] = useState<ActionLog[]>(
-    agent.last_10_action_logs || []
-  );
+
   const [tab, setTab] = useState(0);
+  // Only show logs relevant to this agent: actions where agent is actor, messages where agent is sender or recipient
+  const { messages: rawMessages, actions: rawActions } = useAgentLogs(agent.id);
+  const messageLogs = rawMessages.filter(
+    (l) => l.agent_id === agent.id || l.to_agent_id === agent.id
+  );
+  const actionLogs = rawActions.filter((l) => l.agent_id === agent.id);
 
   useEffect(() => {
     if (agent.id !== "") {
@@ -45,34 +37,6 @@ export function AgentInfo() {
     }
   }, []);
 
-  useEffect(() => {
-    setMoveToCoords({ x: agent.x_coord, y: agent.y_coord });
-    setMessageLogs(agent.last_10_messages || []);
-    setActionLogs(agent.last_10_action_logs || []);
-  }, [agent]);
-
-  useSubscription(
-    `simulation.${simulation.id}.agent.${agent.id}.action`,
-    (msg) => {
-      console.log("Action log received:", msg);
-      let payload: ActionLog;
-      try {
-        payload = msg.json();
-      } catch {}
-      setActionLogs((prev) => [payload, ...prev]);
-    }
-  );
-
-  useSubscription(
-    `simulation.${simulation.id}.agent.${agent.id}.communication`,
-    (msg) => {
-      let payload: Message;
-      try {
-        payload = msg.json();
-      } catch {}
-      setMessageLogs((prev) => [payload, ...prev]);
-    }
-  );
 
   return (
     <Card
@@ -92,6 +56,8 @@ export function AgentInfo() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <Typography variant="body2">Model: {agent.model}</Typography>
@@ -151,10 +117,11 @@ export function AgentInfo() {
             display: "flex",
             flexDirection: "column",
             mt: 1,
+            overflow: "hidden",
           }}
         >
           {tab === 0 && (
-            <Box sx={{ maxHeight: 500, overflowY: "auto" }}>
+            <Box sx={{maxHeight: '33vh', overflow: 'auto' }}>
               {messageLogs.map((l, i) => (
                 <Box key={i} mb={1}>
                   <Typography variant="caption" color="text.secondary">
@@ -177,7 +144,7 @@ export function AgentInfo() {
             </Box>
           )}
           {tab === 1 && (
-            <Box sx={{ maxHeight: 500, overflowY: "auto" }}>
+            <Box sx={{maxHeight: '33vh', overflow: 'auto' }}>
               {actionLogs.map((l, i) => (
                 <Box key={i} mb={1}>
                   <Typography variant="caption" color="text.secondary">

@@ -46,6 +46,8 @@ export class Home extends Scene {
 
   selectedAgentId = "";
 
+  agentMessageDots: Record<string, Phaser.GameObjects.Text> = {};
+
   constructor() {
     super("Home");
   }

@@ -11,7 +11,6 @@ import {
   Toolbar,
   IconButton,
   Typography,
-  Container,
   Card,
   CardContent,
   FormControlLabel,
@@ -22,7 +21,9 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
+// no longer need useTheme; layout uses flex to fit exactly without scroll
 import NatsDebugLog from "@/app/components/NatsDebugLog";
+import { GlobalRelationshipGraph } from "@/app/components/GlobalRelationshipGraph";
 import { EventBus } from "./game/EventBus";
 import { IRefPhaserGame, PhaserSimulation } from "./game/PhaserSimulation";
 import { Home } from "./game/scences/Home";
@@ -54,11 +55,8 @@ function App(props: SimProps) {
     };
   }, [agents, setSelectedAgent]);
 
-  // Define the width for AgentInfo column
-  const agentInfoWidth = { xs: 12, md: 4 }; // 1/3 on desktop, full width on mobile
-
   return (
-    <>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <AppBar position="static">
         <Toolbar>
           <IconButton
@@ -102,21 +100,15 @@ function App(props: SimProps) {
           </Button>
         </Toolbar>
       </AppBar>
-      <Container
-        disableGutters
-        maxWidth={false}
-        sx={{
-          mt: 0,
-          px: 0,
-          width: "100vw",
-          maxWidth: "100vw",
-          display: "flex",
-          flexDirection: "column",
-          p: "2rem",
-          boxSizing: "border-box",
-        }}
-      >
-        <Grid container spacing={2}>
+      <Box component="main" sx={{
+        flex: 1,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        p: "2rem",
+        boxSizing: "border-box",
+      }}>
+        <Grid container spacing={2} sx={{ height: "100%" }}>
           {/* Left column */}
           <Grid
             size={{ xs: 12, md: 8 }}
@@ -172,18 +164,16 @@ function App(props: SimProps) {
           </Grid>
           {/* Right column: Agent info */}
           <Grid
-            size={agentInfoWidth}
+            size={{ xs: 12, md: 4 }}
             sx={{
               display: "flex",
               flexDirection: "column",
-              minWidth: 340,
-              maxWidth: 420,
             }}
           >
             <Card
               sx={{
                 flex: 1,
-                height: "100%",
+                height: "67%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: selectedAgent ? "stretch" : "center",
@@ -201,16 +191,21 @@ function App(props: SimProps) {
               )}
             </Card>
           </Grid>
-          {debugEnabled && (
+          <Grid container size={12} sx={{ height: "33%" }}>
             <Grid size={8} sx={{ height: "100%" }}>
-              <Box sx={{ height: "100%", minHeight: 0 }}>
-                <NatsDebugLog simId={props.simulation.id} />
+              <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                {debugEnabled && <NatsDebugLog />}
               </Box>
             </Grid>
-          )}
+            <Grid size={4} sx={{ height: "100%" }}>
+              <Box sx={{ height: "100%" }}>
+                <GlobalRelationshipGraph />
+              </Box>
+            </Grid>
+          </Grid>
         </Grid>
-      </Container>
-    </>
+    </Box>
+    </Box>
   );
 }
 
