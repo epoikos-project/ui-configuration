@@ -116,7 +116,7 @@ export class Home extends Scene {
       container: agentSprite[1],
       walkingAnimationMapping: 0,
       startPosition: { x: agent.x_coord, y: agent.y_coord },
-      collides: true,
+      collides: false,
     });
     return agentSprite;
   }
@@ -286,7 +286,7 @@ export class Home extends Scene {
           container: sprite[1],
           startPosition: { x: agent.x_coord, y: agent.y_coord },
           walkingAnimationMapping: 0,
-          collides: true,
+          collides: false,
         };
       }),
       characterCollisionStrategy: CollisionStrategy.BLOCK_ONE_TILE_AHEAD,
