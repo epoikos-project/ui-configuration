@@ -40,7 +40,9 @@ function App(props: SimProps) {
   const phaserRef = useRef<IRefPhaserGame<Home> | null>(null);
   const { agents } = useAgents();
   const [debugEnabled, setDebugEnabled] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const listener = (agent: Agent) => {
@@ -91,6 +93,12 @@ function App(props: SimProps) {
             onClick={() => phaserRef.current!.scene!.resetCamera()}
           >
             Reset Camera
+          </Button>
+          <Button
+            color="inherit"
+            onClick={() => phaserRef.current!.scene!.resetAgentSelection()}
+          >
+            Deselect Agent
           </Button>
         </Toolbar>
       </AppBar>

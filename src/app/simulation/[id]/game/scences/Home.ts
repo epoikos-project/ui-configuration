@@ -122,18 +122,19 @@ export class Home extends Scene {
   }
 
   resetCamera() {
-    this.cameraIsFollowingSprite = false;
     this.resetAgentSelection();
-    this.cameras.main.stopFollow();
-    this.cameras.main.setZoom(0.8);
+    this.cameras.main.setZoom(1);
+    console.log(this.game.config.width, this.game.config.height);
     this.cameras.main.centerOn(
-      0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number)
+      0.5 * (this.game.context.canvas.width as number),
+      0.5 * (this.game.context.canvas.height as number)
     );
   }
 
   resetAgentSelection() {
     this.selectedAgentId = "";
+    this.cameraIsFollowingSprite = false;
+    this.cameras.main.stopFollow();
     this.agentContainers.forEach((agent) => {
       (agent.container.getAt(1) as Phaser.GameObjects.Text).setVisible(false);
     });
@@ -168,10 +169,10 @@ export class Home extends Scene {
     });
 
     agentSprite.on("pointerdown", () => {
+      this.resetAgentSelection();
+
       this.cameras.main.startFollow(container, true);
       this.cameraIsFollowingSprite = true;
-
-      this.resetAgentSelection();
       this.selectedAgentId = agent.id;
       text.setVisible(true);
 

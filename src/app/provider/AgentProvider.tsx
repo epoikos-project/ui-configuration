@@ -4,16 +4,18 @@ import { useSimulation } from "../hooks/useSimulation";
 import { useSubscription } from "../hooks/useSubscription";
 import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
 import { ResourceHarvestedMessage } from "../../types/messages/world/ResourceHarvestedMessage";
-import getAgent from "../simulation/[id]/actions";
+import { getAgent, moveAgent } from "../simulation/[id]/actions";
 
 export const AgentContext = createContext<{
   agent: Agent;
   update: (agents: Agent) => void;
   refresh: () => void;
+  moveTo: (x: number, y: number) => void;
 }>({
   agent: null as unknown as Agent,
   update: () => {},
   refresh: () => {},
+  moveTo: () => {},
 });
 
 export function AgentProvider({
@@ -67,7 +69,12 @@ export function AgentProvider({
 
   return (
     <AgentContext.Provider
-      value={{ agent: ag ?? agent, update: setAgent, refresh }}
+      value={{
+        agent: ag ?? agent,
+        update: setAgent,
+        refresh,
+        moveTo: (x, y) => moveAgent(simulation.id, ag.id, x, y),
+      }}
     >
       {children}
     </AgentContext.Provider>
