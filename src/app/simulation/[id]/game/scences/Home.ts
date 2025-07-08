@@ -18,6 +18,7 @@ import { EventBus } from "../EventBus";
 import { Resource } from "../../../../../types/Resource";
 import { ResourceHarvestedMessage } from "@/types/messages/world/ResourceHarvestedMessage";
 import { ResourceGrownMessage } from "@/types/messages/world/ResourceGrownMessage";
+import { ActionLog } from "@/types/ActionLog";
 
 export class Home extends Scene {
   camera!: Phaser.Cameras.Scene2D.Camera;
@@ -81,6 +82,8 @@ export class Home extends Scene {
   resourceHarvestedHandler(message: Msg) {
     const parsed = message.json<ResourceHarvestedMessage>();
     this.updateTileIndex(parsed.location[0], parsed.location[1], 9);
+    // show green "finished" dots for the harvesting agent
+    this.showMessageDots(parsed.harvester_id, "finished", "#00ff00");
   }
 
   resourceGrownHandler(message: Msg) {
@@ -139,6 +142,51 @@ export class Home extends Scene {
     this.cameras.main.stopFollow();
     this.agentContainers.forEach((agent) => {
       (agent.container.getAt(1) as Phaser.GameObjects.Text).setVisible(false);
+    });
+  }
+
+  /**
+   * Show animated dots above the agent when a message is received/sent.
+   */
+  /**
+   * Show animated label+dots above the agent (e.g. speaking, harvesting, waiting, finished).
+   * @param agentId id of the agent
+   * @param label   text label to prefix the dots (no label = dots only)
+   * @param color   hex color code for the text
+   */
+  showMessageDots(agentId: string, label = "", color = "#ffffff") {
+    if (this.agentMessageDots[agentId]) {
+      return;
+    }
+    const found = this.agentContainers.find((a) => a.id === agentId);
+    if (!found) {
+      return;
+    }
+    // initial text with first frame
+    const initial = label ? `${label}.` : ".";
+    const dotsText = this.add
+      .text(0, -24, initial, { fontSize: "18px", color })
+      .setOrigin(0.5, 0.5);
+    found.container.add(dotsText);
+    this.agentMessageDots[agentId] = dotsText;
+    let frame = 0;
+    const frames = label ? [
+      `${label}.`,
+      `${label}..`,
+      `${label}...`,
+    ] : [".", "..", "..."];
+    const interval = this.time.addEvent({
+      delay: 400,
+      repeat: 4,
+      callback: () => {
+        dotsText.setText(frames[frame % frames.length]);
+        frame++;
+      },
+    });
+    this.time.delayedCall(2000, () => {
+      found.container.remove(dotsText, true);
+      delete this.agentMessageDots[agentId];
+      interval.remove(false);
     });
   }
 
@@ -363,6 +411,36 @@ export class Home extends Scene {
     this.subscribe(
       `simulation.${this.simulation.id}.resource.*.grown`,
       this.resourceGrownHandler,
+      this
+    );
+    // subscribe to all communication channels to trigger message dots
+    // communication -> speaking indicator
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.communication`,
+      (msg: Msg) => {
+        const parts = msg.subject.split(".");
+        const agentId = parts[3];
+        this.showMessageDots(agentId, "speaking");
+      },
+      this
+    );
+    // actions -> harvesting or waiting indicator
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.action`,
+      (msg: Msg) => {
+        let payload: ActionLog;
+        try {
+          payload = msg.json();
+        } catch {
+          return;
+        }
+        const action = payload.action.toLowerCase();
+        if (action.startsWith("harvest")) {
+          this.showMessageDots(payload.agent_id, "harvesting");
+        } else if (action.includes("waiting")) {
+          this.showMessageDots(payload.agent_id, "waiting");
+        }
+      },
       this
     );
     EventBus.emit("current-scene-ready", this);
