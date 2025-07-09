@@ -56,7 +56,13 @@ function App(props: SimProps) {
   }, [agents, setSelectedAgent]);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+      }}
+    >
       <AppBar position="static">
         <Toolbar>
           <IconButton
@@ -100,14 +106,16 @@ function App(props: SimProps) {
           </Button>
         </Toolbar>
       </AppBar>
-      <Box component="main" sx={{
-        flex: 1,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        p: "2rem",
-        boxSizing: "border-box",
-      }}>
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          p: "2rem",
+          boxSizing: "border-box",
+        }}
+      >
         <Grid container spacing={2} sx={{ height: "100%" }}>
           {/* Left column */}
           <Grid
@@ -149,7 +157,6 @@ function App(props: SimProps) {
                     backgroundColor: "#103014",
                     borderRadius: 2,
                     boxShadow: 1,
-                    overflow: "hidden",
                     position: "relative",
                     display: "flex",
                     alignItems: "center",
@@ -191,20 +198,26 @@ function App(props: SimProps) {
               )}
             </Card>
           </Grid>
-          <Grid container size={12} sx={{ height: "33%" }}>
-            <Grid size={8} sx={{ height: "100%" }}>
-              <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                {debugEnabled && <NatsDebugLog />}
-              </Box>
-            </Grid>
-            <Grid size={4} sx={{ height: "100%" }}>
+          <Grid container size={12} sx={{ height: "70%" }}>
+            <Grid size={12} sx={{ height: "100%" }}>
               <Box sx={{ height: "100%" }}>
                 <GlobalRelationshipGraph />
               </Box>
             </Grid>
+            <Grid size={12} sx={{ height: "100%" }}>
+              <Box
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {debugEnabled && <NatsDebugLog />}
+              </Box>
+            </Grid>
           </Grid>
         </Grid>
-    </Box>
+      </Box>
     </Box>
   );
 }
