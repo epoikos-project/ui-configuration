@@ -16,6 +16,7 @@ import AgentConfigForm from "../components/AgentConfigForm";
 import WorldConfig from "../components/WorldConfig";
 import LiveJsonEditor from "../components/LiveJsonEditor";
 import type { UnifiedConfig, AgentType } from "./types";
+import type { ResourceConfig } from "../components/LiveJsonEditor";
 
 interface Props {
   open: boolean;
@@ -54,6 +55,7 @@ export default function ConfigDialog({
   const [worldHeight, setWorldHeight] = useState(25);
   const [numRegions, setNumRegions] = useState(4);
   const [totalResources, setTotalResources] = useState(25);
+  const [resourceSettings, setResourceSettings] = useState<ResourceConfig[]>([]);
 
   // Initialize or reset form fields when dialog opens or editingConfig changes
   useEffect(() => {
@@ -64,6 +66,7 @@ export default function ConfigDialog({
       setWorldHeight(editingConfig.settings.world.size[1]);
       setNumRegions(editingConfig.settings.world.num_regions);
       setTotalResources(editingConfig.settings.world.total_resources);
+      setResourceSettings(editingConfig.settings.world.resources ?? []);
     } else {
       setName("");
       setAgents([]);
@@ -71,6 +74,7 @@ export default function ConfigDialog({
       setWorldHeight(DEFAULT_WORLD.size[1]);
       setNumRegions(DEFAULT_WORLD.num_regions);
       setTotalResources(DEFAULT_WORLD.total_resources);
+      setResourceSettings([]);
     }
     setTab(0);
   }, [editingConfig]);
@@ -79,6 +83,7 @@ export default function ConfigDialog({
     size: [worldWidth, worldHeight] as [number, number],
     num_regions: numRegions,
     total_resources: totalResources,
+    resources: resourceSettings,
   };
 
   return (
@@ -105,6 +110,8 @@ export default function ConfigDialog({
             setNumRegions={setNumRegions}
             totalResources={totalResources}
             setTotalResources={setTotalResources}
+            resourceSettings={resourceSettings}
+            setResourceSettings={setResourceSettings}
           />
         </TabPanel>
         <TabPanel value={tab} index={2}>
@@ -118,6 +125,8 @@ export default function ConfigDialog({
               setNumRegions(w.num_regions);
               setTotalResources(w.total_resources);
             }}
+            resources={resourceSettings}
+            setResources={setResourceSettings}
           />
         </TabPanel>
         <Box mt={2} display="flex" flexDirection="column" gap={2}>

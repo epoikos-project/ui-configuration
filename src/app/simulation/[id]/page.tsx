@@ -1,7 +1,15 @@
-import Head from "next/head";
-
 import { Agent } from "@/types/Agent";
+import type { Metadata } from "next";
 import Wrapper from "./wrapper";
+
+export const metadata: Metadata = {
+  title: "Epoikos Simulation",
+  description:
+    "Epoikos is a simulation platform for creating and running agent-based simulations.",
+  icons: {
+    icon: "/favicon.png",
+  },
+};
 
 export default async function Home({
   params,
@@ -13,31 +21,21 @@ export default async function Home({
   const data = await fetch(`http://localhost:8000/simulation/${id}`);
   const worldData = await fetch(`http://localhost:8000/simulation/${id}/world`);
   const agentsData = await fetch(
-    `http://localhost:8000/simulation/${id}/agent`
+    `http://localhost:8000/simulation/${id}/agent`,
+    { next: { tags: ["agents"] } }
   );
   const sim = await data.json();
   const world = await worldData.json();
   const agents: Agent[] = await agentsData.json();
 
   return (
-    <>
-      <Head>
-        <title>Phaser Nextjs Template</title>
-        <meta
-          name="description"
-          content="A Phaser 3 Next.js project template that demonstrates Next.js with React communication and uses Vite for bundling."
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.png" type="image/png" />
-      </Head>
-      <main>
-        <Wrapper
-          world={world.world_data}
-          resources={world.resources_data}
-          simulation={sim}
-          agents={agents}
-        />
-      </main>
-    </>
+    <main>
+      <Wrapper
+        world={world.world_data}
+        resources={world.resources_data}
+        simulation={sim}
+        agents={agents}
+      />
+    </main>
   );
 }

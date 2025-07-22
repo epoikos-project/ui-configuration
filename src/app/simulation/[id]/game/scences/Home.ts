@@ -18,6 +18,7 @@ import { EventBus } from "../EventBus";
 import { Resource } from "../../../../../types/Resource";
 import { ResourceHarvestedMessage } from "@/types/messages/world/ResourceHarvestedMessage";
 import { ResourceGrownMessage } from "@/types/messages/world/ResourceGrownMessage";
+import { ActionLog } from "@/types/ActionLog";
 
 export class Home extends Scene {
   camera!: Phaser.Cameras.Scene2D.Camera;
@@ -46,6 +47,8 @@ export class Home extends Scene {
 
   selectedAgentId = "";
 
+  agentMessageDots: Record<string, Phaser.GameObjects.Text> = {};
+
   constructor() {
     super("Home");
   }
@@ -70,7 +73,7 @@ export class Home extends Scene {
         tile.width,
         tile.height,
         tile.baseWidth,
-        tile.baseHeight,
+        tile.baseHeight
       );
       this.tilemap.putTileAt(newTile, tile.x, tile.y);
     }
@@ -79,6 +82,8 @@ export class Home extends Scene {
   resourceHarvestedHandler(message: Msg) {
     const parsed = message.json<ResourceHarvestedMessage>();
     this.updateTileIndex(parsed.location[0], parsed.location[1], 9);
+    // show green "finished" dots for the harvesting agent
+    this.showMessageDots(parsed.harvester_id, "finished", "#00ff00");
   }
 
   resourceGrownHandler(message: Msg) {
@@ -116,31 +121,77 @@ export class Home extends Scene {
       container: agentSprite[1],
       walkingAnimationMapping: 0,
       startPosition: { x: agent.x_coord, y: agent.y_coord },
-      collides: true,
+      collides: false,
     });
     return agentSprite;
   }
 
   resetCamera() {
-    this.cameraIsFollowingSprite = false;
     this.resetAgentSelection();
-    this.cameras.main.stopFollow();
     this.cameras.main.setZoom(1);
+    console.log(this.game.config.width, this.game.config.height);
     this.cameras.main.centerOn(
-      0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number),
+      0.5 * (this.game.context.canvas.width as number),
+      0.5 * (this.game.context.canvas.height as number)
     );
   }
 
   resetAgentSelection() {
     this.selectedAgentId = "";
+    this.cameraIsFollowingSprite = false;
+    this.cameras.main.stopFollow();
     this.agentContainers.forEach((agent) => {
       (agent.container.getAt(1) as Phaser.GameObjects.Text).setVisible(false);
     });
   }
 
+  /**
+   * Show animated dots above the agent when a message is received/sent.
+   */
+  /**
+   * Show animated label+dots above the agent (e.g. speaking, harvesting, waiting, finished).
+   * @param agentId id of the agent
+   * @param label   text label to prefix the dots (no label = dots only)
+   * @param color   hex color code for the text
+   */
+  showMessageDots(agentId: string, label = "", color = "#ffffff") {
+    if (this.agentMessageDots[agentId]) {
+      return;
+    }
+    const found = this.agentContainers.find((a) => a.id === agentId);
+    if (!found) {
+      return;
+    }
+    // initial text with first frame
+    const initial = label ? `${label}.` : ".";
+    const dotsText = this.add
+      .text(0, -24, initial, { fontSize: "18px", color })
+      .setOrigin(0.5, 0.5);
+    found.container.add(dotsText);
+    this.agentMessageDots[agentId] = dotsText;
+    let frame = 0;
+    const frames = label ? [
+      `${label}.`,
+      `${label}..`,
+      `${label}...`,
+    ] : [".", "..", "..."];
+    const interval = this.time.addEvent({
+      delay: 400,
+      repeat: 4,
+      callback: () => {
+        dotsText.setText(frames[frame % frames.length]);
+        frame++;
+      },
+    });
+    this.time.delayedCall(2000, () => {
+      found.container.remove(dotsText, true);
+      delete this.agentMessageDots[agentId];
+      interval.remove(false);
+    });
+  }
+
   createSprite(
-    agent: Pick<Agent, "id" | "name">,
+    agent: Pick<Agent, "id" | "name">
   ): [Phaser.GameObjects.Sprite, Phaser.GameObjects.Container] {
     const agentSprite = this.add.sprite(0, 0, "fluffy");
     agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
@@ -150,7 +201,7 @@ export class Home extends Scene {
       .text(
         agentSprite.width * 0.5,
         agentSprite.height * 0.5 - 15,
-        agentSprite.name,
+        agentSprite.name
       )
       .setOrigin(0.5, 0.5);
     text.setVisible(false);
@@ -168,10 +219,10 @@ export class Home extends Scene {
     });
 
     agentSprite.on("pointerdown", () => {
+      this.resetAgentSelection();
+
       this.cameras.main.startFollow(container, true);
       this.cameraIsFollowingSprite = true;
-
-      this.resetAgentSelection();
       this.selectedAgentId = agent.id;
       text.setVisible(true);
 
@@ -207,10 +258,10 @@ export class Home extends Scene {
         //  Scatter the tiles so we get more mud and less stones
         let tileIndex = 0;
         const resource = this.resources.find(
-          (value) => value.x_coord === x && value.y_coord === y,
+          (value) => value.x_coord === x && value.y_coord === y
         );
         if (resource != null) {
-          if (resource.availability) {
+          if (resource.available) {
             tileIndex = 8;
           } else {
             tileIndex = 9;
@@ -238,7 +289,7 @@ export class Home extends Scene {
       16,
       0,
       0,
-      8,
+      8
     );
     const resourceHarvestedTileset = this.tilemap.addTilesetImage(
       "resource-harvested",
@@ -247,7 +298,7 @@ export class Home extends Scene {
       16,
       0,
       0,
-      9,
+      9
     );
 
     assert(tileset);
@@ -258,24 +309,23 @@ export class Home extends Scene {
       0,
       [tileset, wallTileset, resourceHarvestedTileset],
       0,
-      0,
+      0
     );
 
     this.tilemap.layer.data.forEach((row) =>
       row.forEach((tile) => {
         if (tile.index === 8 || tile.index === 9) {
           console.log(tile.index);
-          tile.properties = { ge_collide: true };
-          tile.setCollision(true);
+          // tile.properties = { ge_collide: true };
+          // tile.setCollision(true);
         }
-      }),
+      })
     );
 
     this.playerSprite = this.add.sprite(0, 0, "fluffy");
-    this.cameras.main.centerOn(
-      0.5 * (this.game.config.width as number),
-      0.5 * (this.game.config.height as number),
-    );
+    const mapWidth = this.tilemap.widthInPixels;
+    const mapHeight = this.tilemap.heightInPixels;
+    this.cameras.main.centerOn(mapWidth / 2, mapHeight / 2);
     const gridEngineConfig: GridEngineConfig = {
       characters: this.agents.map((agent) => {
         const sprite = this.createSprite(agent);
@@ -286,7 +336,7 @@ export class Home extends Scene {
           container: sprite[1],
           startPosition: { x: agent.x_coord, y: agent.y_coord },
           walkingAnimationMapping: 0,
-          collides: true,
+          collides: false,
         };
       }),
       characterCollisionStrategy: CollisionStrategy.BLOCK_ONE_TILE_AHEAD,
@@ -331,7 +381,7 @@ export class Home extends Scene {
         _pointer: any,
         _gameObjects: Array<any>,
         _deltaX: number,
-        deltaY: number,
+        deltaY: number
       ) => {
         const cam = this.cameras.main;
 
@@ -340,28 +390,58 @@ export class Home extends Scene {
         cam.zoom -= deltaY * zoomSpeed;
 
         cam.zoom = Phaser.Math.Clamp(cam.zoom, 0.5, 3);
-      },
+      }
     );
 
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.placed`,
       this.agentCreateHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.moved`,
       this.agentMoveHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.resource.*.harvested`,
       this.resourceHarvestedHandler,
-      this,
+      this
     );
     this.subscribe(
       `simulation.${this.simulation.id}.resource.*.grown`,
       this.resourceGrownHandler,
-      this,
+      this
+    );
+    // subscribe to all communication channels to trigger message dots
+    // communication -> speaking indicator
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.communication`,
+      (msg: Msg) => {
+        const parts = msg.subject.split(".");
+        const agentId = parts[3];
+        this.showMessageDots(agentId, "speaking");
+      },
+      this
+    );
+    // actions -> harvesting or waiting indicator
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.action`,
+      (msg: Msg) => {
+        let payload: ActionLog;
+        try {
+          payload = msg.json();
+        } catch {
+          return;
+        }
+        const action = payload.action.toLowerCase();
+        if (action.startsWith("harvest")) {
+          this.showMessageDots(payload.agent_id, "harvesting");
+        } else if (action.includes("waiting")) {
+          this.showMessageDots(payload.agent_id, "waiting");
+        }
+      },
+      this
     );
     EventBus.emit("current-scene-ready", this);
   }

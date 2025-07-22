@@ -319,7 +319,7 @@ const ConfigurationManager: React.FC<Props> = ({
               </TableContainer>
               <Box mt={2} display="flex" justifyContent="center">
                 <Button variant="contained" onClick={fetchConfigurations}>
-                  Refresh List
+                  Refresh Configurations
                 </Button>
               </Box>
             </TabPanel>

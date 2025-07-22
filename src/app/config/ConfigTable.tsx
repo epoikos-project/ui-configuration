@@ -90,7 +90,7 @@ export default function ConfigTable({
       </TableContainer>
       <Box mt={2} display="flex" justifyContent="center">
         <Button variant="contained" onClick={refreshList}>
-          Refresh List
+          Refresh Configurations
         </Button>
       </Box>
     </Paper>

@@ -6,12 +6,11 @@ import {
   useNodesState,
   useEdgesState,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { useAgent } from "../hooks/useAgent";
-import { useSimulation } from "../hooks/useSimulation";
 import {
   Button,
 } from "@mui/material";
+import "@xyflow/react/dist/style.css";
+import { useSimulation } from "../hooks/useSimulation";
 
 import dagre from "dagre";
 
@@ -50,17 +49,18 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   return { nodes: layoutedNodes, edges };
 };
 
-export function RelationshipGraph() {
-  const { agent } = useAgent();
+/**
+ * Displays the full relationship graph for the current simulation.
+ * Fetches and updates the nodes and edges on each simulation tick.
+ */
+export function GlobalRelationshipGraph() {
   const { simulation } = useSimulation();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   useEffect(() => {
     async function fetchGraph() {
-      const params = new URLSearchParams();
-      params.set("agent_id", agent.id);
-      const url = `http://localhost:8000/simulation/${simulation.id}/relationship_graph?${params}`;
+      const url = `http://localhost:8000/simulation/${simulation.id}/relationship_graph`;
       try {
         const res = await fetch(url);
         if (!res.ok) return;
@@ -89,7 +89,7 @@ export function RelationshipGraph() {
       }
     }
     fetchGraph();
-  }, [simulation.id, simulation.tick, agent.id, setNodes, setEdges]);
+  }, [simulation.id, simulation.tick, setNodes, setEdges]);
 
   const onLayout = useCallback(
     (direction: "TB" | "LR") => {

@@ -5,4 +5,5 @@ export interface ResourceHarvestedMessage extends WorldBaseMessage {
   location: [number, number];
   start_tick: number;
   end_tick: number;
+  new_energy_level: number;
 }
