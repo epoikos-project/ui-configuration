@@ -110,7 +110,6 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
 
   const validateForm = () => {
     const e: string[] = [];
-    if (!name.trim()) e.push("Name required");
     MANDATORY.forEach((m) => {
       if (!attributes.some((at) => at.name === m)) e.push(`Missing ${m}`);
     });
@@ -309,11 +308,11 @@ const AgentConfigForm: React.FC<Props> = ({ agents, setAgents }) => {
         {/* Agent name, count, model, objective, personality */}
         <TextField
           fullWidth
-          required
           margin="normal"
           label="Agent Type Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          helperText="Leave blank to auto-generate a gender-neutral name"
         />
         <TextField
           fullWidth
