@@ -13,6 +13,9 @@ export interface Agent {
   y_coord: number;
   visibility_range: number;
   range_per_move: number;
+  dead: boolean;
+  participating_in_plan_id: string | null;
+  personality: string;
   last_10_action_logs: ActionLog[];
   last_10_messages: Message[];
 }

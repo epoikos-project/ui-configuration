@@ -61,6 +61,13 @@ export function AgentInfo() {
         }}
       >
         <Typography variant="body2">Model: {agent.model}</Typography>
+        <Typography variant="body2">
+          Status: {agent.dead ? (
+            <span style={{ color: '#ff0000', fontWeight: 'bold' }}>Dead ☠️</span>
+          ) : (
+            <span style={{ color: '#00ff00', fontWeight: 'bold' }}>Alive ✓</span>
+          )}
+        </Typography>
         <Typography variant="body2">Hunger: {agent.hunger}</Typography>
         <Typography variant="body2">Energy: {agent.energy_level}</Typography>
         <Typography variant="body2">
@@ -79,6 +86,7 @@ export function AgentInfo() {
             variant="outlined"
             value={moveToCoords.x}
             size="small"
+            disabled={agent.dead}
             onChange={(e) =>
               setMoveToCoords({ ...moveToCoords, x: Number(e.target.value) })
             }
@@ -89,6 +97,7 @@ export function AgentInfo() {
             variant="outlined"
             value={moveToCoords.y}
             size="small"
+            disabled={agent.dead}
             onChange={(e) =>
               setMoveToCoords({ ...moveToCoords, y: Number(e.target.value) })
             }
@@ -96,6 +105,7 @@ export function AgentInfo() {
           <Button
             variant="contained"
             color="primary"
+            disabled={agent.dead}
             onClick={() => {
               moveTo(moveToCoords.x, moveToCoords.y);
             }}

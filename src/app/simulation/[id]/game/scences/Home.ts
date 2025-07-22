@@ -11,6 +11,7 @@ import { Scene } from "phaser";
 import { SubscribeFunction } from "@/app/hooks/useSubscribe";
 import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
 import { AgentPlacedMessage } from "@/types/messages/world/AgentPlacedMessage";
+import { AgentDeadMessage } from "@/types/messages/world/AgentDeadMessage";
 import { Msg } from "@nats-io/nats-core";
 import assert from "assert";
 import { SimProps } from "../../app";
@@ -112,7 +113,49 @@ export class Home extends Scene {
     });
   }
 
-  createAgent(agent: Pick<Agent, "id" | "name" | "x_coord" | "y_coord">) {
+  agentDeadHandler(message: Msg) {
+    const data = message.json<AgentDeadMessage>();
+    console.log("Agent died:", data.id);
+    
+    // Find the agent container using the id from the message (same as move handler)
+    const agentContainer = this.agentContainers.find((a) => a.id === data.id);
+    
+    if (!agentContainer) {
+      console.log("Agent container not found for dead agent:", data.id);
+      return;
+    }
+
+    const agentId = agentContainer.id;
+    
+    // Check if the agent is currently moving
+    if (this.gridEngine.isMoving(agentId)) {
+      console.log("Agent is moving, waiting for movement to complete before showing tombstone");
+      // Wait for movement to finish before changing texture
+      this.gridEngine.movementStopped().subscribe(({charId}) => {
+        if (charId === agentId) {
+          this.changeAgentToTombstone(agentContainer!, data.name);
+        }
+      });
+    } else {
+      // Agent is not moving, change immediately
+      this.changeAgentToTombstone(agentContainer, data.name);
+    }
+  }
+
+  private changeAgentToTombstone(agentContainer: { id: string; container: Phaser.GameObjects.Container }, agentName: string) {
+    // Get the existing sprite and change its texture to tombstone
+    const container = agentContainer.container;
+    const [sprite] = container.list as [Phaser.GameObjects.Sprite, Phaser.GameObjects.Text];
+    
+    // Change the sprite texture to tombstone
+    sprite.setTexture("tombstone");
+    sprite.clearTint(); // Remove any color tint
+    sprite.name = `${agentName} (Dead)`;
+    
+    console.log("Changed agent sprite to tombstone for:", agentContainer.id);
+  }
+
+  createAgent(agent: Pick<Agent, "id" | "name" | "x_coord" | "y_coord"> & { dead?: boolean }) {
     const agentSprite = this.createSprite(agent);
     this.agentContainers.push({ id: agent.id, container: agentSprite[1] });
     this.gridEngine.addCharacter({
@@ -191,12 +234,19 @@ export class Home extends Scene {
   }
 
   createSprite(
-    agent: Pick<Agent, "id" | "name">
+    agent: Pick<Agent, "id" | "name"> & { dead?: boolean }
   ): [Phaser.GameObjects.Sprite, Phaser.GameObjects.Container] {
-    const agentSprite = this.add.sprite(0, 0, "fluffy");
-    agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
+    // Choose sprite based on whether agent is dead
+    const spriteKey = agent.dead ? "tombstone" : "fluffy";
+    const agentSprite = this.add.sprite(0, 0, spriteKey);
+    
+    // Only apply tint and random color to living agents
+    if (!agent.dead) {
+      agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
+    }
+    
     agentSprite.setInteractive();
-    agentSprite.name = agent.name;
+    agentSprite.name = agent.dead ? `${agent.name} (Dead)` : agent.name;
     const text: Phaser.GameObjects.Text = this.add
       .text(
         agentSprite.width * 0.5,
@@ -401,6 +451,11 @@ export class Home extends Scene {
     this.subscribe(
       `simulation.${this.simulation.id}.agent.*.moved`,
       this.agentMoveHandler,
+      this
+    );
+    this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.dead`,
+      this.agentDeadHandler,
       this
     );
     this.subscribe(

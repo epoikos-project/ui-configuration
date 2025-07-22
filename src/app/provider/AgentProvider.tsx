@@ -3,6 +3,7 @@ import { createContext, JSX, useEffect, useState } from "react";
 import { useSimulation } from "../hooks/useSimulation";
 import { useSubscription } from "../hooks/useSubscription";
 import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
+import { AgentDeadMessage } from "../../types/messages/world/AgentDeadMessage";
 import { ResourceHarvestedMessage } from "../../types/messages/world/ResourceHarvestedMessage";
 import { getAgent, moveAgent } from "../simulation/[id]/actions";
 
@@ -26,7 +27,6 @@ export function AgentProvider({
   agent: Agent;
 }): JSX.Element {
   const [ag, setAgent] = useState<Agent>(agent);
-
   const { simulation } = useSimulation();
 
   console.log("AgentProvider initialized with agent:", agent);
@@ -65,6 +65,15 @@ export function AgentProvider({
         energy_level: data.new_energy_level,
       }));
     }
+  });
+
+  useSubscription(`simulation.${simulation.id}.agent.${agent.id}.dead`, (msg) => {
+    console.log("Agent died:", msg);
+    const data: AgentDeadMessage = msg.json();
+    setAgent((a) => ({
+      ...a,
+      dead: true,
+    }));
   });
 
   return (
