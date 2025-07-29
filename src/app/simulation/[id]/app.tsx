@@ -94,6 +94,15 @@ function App(props: SimProps) {
           />
           <Button
             color="inherit"
+            onClick={() => {
+              phaserRef.current!.scene!.downloadFullMap();
+            }}
+          >
+            Download Map
+          </Button>
+
+          <Button
+            color="inherit"
             onClick={() => phaserRef.current!.scene!.resetCamera()}
           >
             Reset Camera

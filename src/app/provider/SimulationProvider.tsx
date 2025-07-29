@@ -21,7 +21,7 @@ export function SimulationProvider({
 
   useEffect(() => {
     setSim(simulation);
-  }, [simulation]);
+  }, [simulation.id]);
 
   useSubscription(`simulation.${simulation.id}.tick`, (msg) => {
     const data: { tick: number } = msg.json();
