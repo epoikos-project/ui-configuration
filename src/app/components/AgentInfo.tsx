@@ -25,7 +25,8 @@ export function AgentInfo() {
 
   const [tab, setTab] = useState(0);
   // Only show logs relevant to this agent: actions where agent is actor, messages where agent is sender or recipient
-  const { messages: rawMessages, actions: rawActions } = useAgentLogs(agent.id);
+  const rawMessages = agent.last_10_messages ?? [];
+  const rawActions = agent.last_10_action_logs ?? [];
   const messageLogs = rawMessages.filter(
     (l) => l.agent_id === agent.id || l.to_agent_id === agent.id
   );
@@ -37,6 +38,9 @@ export function AgentInfo() {
     }
   }, []);
 
+  useEffect(() => {
+    setMoveToCoords({ x: agent.x_coord, y: agent.y_coord });
+  }, [agent]);
 
   return (
     <Card
@@ -62,10 +66,15 @@ export function AgentInfo() {
       >
         <Typography variant="body2">Model: {agent.model}</Typography>
         <Typography variant="body2">
-          Status: {agent.dead ? (
-            <span style={{ color: '#ff0000', fontWeight: 'bold' }}>Dead ☠️</span>
+          Status:{" "}
+          {agent.dead ? (
+            <span style={{ color: "#ff0000", fontWeight: "bold" }}>
+              Dead ☠️
+            </span>
           ) : (
-            <span style={{ color: '#00ff00', fontWeight: 'bold' }}>Alive ✓</span>
+            <span style={{ color: "#00ff00", fontWeight: "bold" }}>
+              Alive ✓
+            </span>
           )}
         </Typography>
         <Typography variant="body2">Hunger: {agent.hunger}</Typography>
@@ -131,7 +140,7 @@ export function AgentInfo() {
           }}
         >
           {tab === 0 && (
-            <Box sx={{maxHeight: '33vh', overflow: 'auto' }}>
+            <Box sx={{ maxHeight: "33vh", overflow: "auto" }}>
               {messageLogs.map((l, i) => (
                 <Box key={i} mb={1}>
                   <Typography variant="caption" color="text.secondary">
@@ -154,7 +163,7 @@ export function AgentInfo() {
             </Box>
           )}
           {tab === 1 && (
-            <Box sx={{maxHeight: '33vh', overflow: 'auto' }}>
+            <Box sx={{ maxHeight: "33vh", overflow: "auto" }}>
               {actionLogs.map((l, i) => (
                 <Box key={i} mb={1}>
                   <Typography variant="caption" color="text.secondary">

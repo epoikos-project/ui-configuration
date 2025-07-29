@@ -109,7 +109,10 @@ function App(props: SimProps) {
           </Button>
           <Button
             color="inherit"
-            onClick={() => phaserRef.current!.scene!.resetAgentSelection()}
+            onClick={() => {
+              phaserRef.current!.scene!.resetAgentSelection();
+              setSelectedAgent(undefined);
+            }}
           >
             Deselect Agent
           </Button>
@@ -197,7 +200,10 @@ function App(props: SimProps) {
               }}
             >
               {selectedAgent ? (
-                <AgentProvider agent={selectedAgent}>
+                <AgentProvider
+                  agentId={selectedAgent.id}
+                  initialAgent={selectedAgent}
+                >
                   <AgentInfo />
                 </AgentProvider>
               ) : (
