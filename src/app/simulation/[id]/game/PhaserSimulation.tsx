@@ -65,5 +65,5 @@ export const PhaserSimulation = forwardRef<IRefPhaserGame, IProps>(
     }, [currentActiveScene, ref, nats, props, subscribe]);
 
     return <div id="game-container"></div>;
-  },
+  }
 );

@@ -1,0 +1,11 @@
+<svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tombstone background -->
+  <path d="M3 4 C3 1.5, 5 0, 8 0 C11 0, 13 1.5, 13 4 L13 17 C13 18, 12 19, 11 19 L5 19 C4 19, 3 18, 3 17 L3 4 Z" fill="#666666" stroke="#444444" stroke-width="1"/>
+  
+  <!-- Cross -->
+  <line x1="8" y1="6" x2="8" y2="12" stroke="#cccccc" stroke-width="1.5"/>
+  <line x1="6" y1="9" x2="10" y2="9" stroke="#cccccc" stroke-width="1.5"/>
+  
+  <!-- RIP text -->
+  <text x="8" y="16" text-anchor="middle" font-family="serif" font-size="4" fill="#cccccc">RIP</text>
+</svg>

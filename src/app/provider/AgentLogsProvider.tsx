@@ -41,30 +41,27 @@ export const AgentLogsProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     });
     setLogs(initial);
-  }, [agents]);
+  }, []);
 
   // subscribe to all agents' action logs
-  useSubscription(
-    `simulation.${simulation.id}.agent.*.action`,
-    (msg) => {
-      let payload: ActionLog;
-      try {
-        payload = msg.json();
-      } catch {
-        return;
-      }
-      setLogs((prev) => {
-        const entry = prev[payload.agent_id] || { messages: [], actions: [] };
-        return {
-          ...prev,
-          [payload.agent_id]: {
-            ...entry,
-            actions: [payload, ...entry.actions],
-          },
-        };
-      });
+  useSubscription(`simulation.${simulation.id}.agent.*.action`, (msg) => {
+    let payload: ActionLog;
+    try {
+      payload = msg.json();
+    } catch {
+      return;
     }
-  );
+    setLogs((prev) => {
+      const entry = prev[payload.agent_id] || { messages: [], actions: [] };
+      return {
+        ...prev,
+        [payload.agent_id]: {
+          ...entry,
+          actions: [payload, ...entry.actions],
+        },
+      };
+    });
+  });
 
   // subscribe to all agents' communication logs (both sent and received)
   useSubscription(

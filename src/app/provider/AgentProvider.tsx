@@ -3,6 +3,7 @@ import { createContext, JSX, useEffect, useState } from "react";
 import { useSimulation } from "../hooks/useSimulation";
 import { useSubscription } from "../hooks/useSubscription";
 import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
+import { AgentDeadMessage } from "../../types/messages/world/AgentDeadMessage";
 import { ResourceHarvestedMessage } from "../../types/messages/world/ResourceHarvestedMessage";
 import { getAgent, moveAgent } from "../simulation/[id]/actions";
 
@@ -20,20 +21,24 @@ export const AgentContext = createContext<{
 
 export function AgentProvider({
   children,
-  agent,
+  agentId,
+  initialAgent = {} as Agent,
 }: {
   children: React.ReactNode;
-  agent: Agent;
+  agentId: string;
+  initialAgent?: Agent;
 }): JSX.Element {
-  const [ag, setAgent] = useState<Agent>(agent);
-
+  const [ag, setAgent] = useState<Agent>(initialAgent);
   const { simulation } = useSimulation();
 
-  console.log("AgentProvider initialized with agent:", agent);
+  console.log("AgentProvider initialized with agent:", agentId);
 
   useEffect(() => {
-    setAgent(agent);
-  }, [agent]);
+    getAgent(simulation.id, agentId).then((data) => {
+      console.log("Agent data refreshed:", data);
+      setAgent(data);
+    });
+  }, [agentId, simulation.id]);
 
   const refresh = () => {
     getAgent(simulation.id, ag.id).then((data) => {
@@ -43,7 +48,7 @@ export function AgentProvider({
   };
 
   useSubscription(
-    `simulation.${simulation.id}.agent.${agent.id}.moved`,
+    `simulation.${simulation.id}.agent.${agentId}.moved`,
     (msg) => {
       console.log("Agent moved:", msg);
       const data: AgentMovedMessage = msg.json();
@@ -59,7 +64,7 @@ export function AgentProvider({
   useSubscription(`simulation.${simulation.id}.resource.*.harvested`, (msg) => {
     console.log("Resource harvested:", msg);
     const data: ResourceHarvestedMessage = msg.json();
-    if (data.harvester_id === agent.id) {
+    if (data.harvester_id === agentId) {
       setAgent((a) => ({
         ...a,
         energy_level: data.new_energy_level,
@@ -67,10 +72,22 @@ export function AgentProvider({
     }
   });
 
+  useSubscription(
+    `simulation.${simulation.id}.agent.${agentId}.dead`,
+    (msg) => {
+      console.log("Agent died:", msg);
+      const data: AgentDeadMessage = msg.json();
+      setAgent((a) => ({
+        ...a,
+        dead: true,
+      }));
+    }
+  );
+
   return (
     <AgentContext.Provider
       value={{
-        agent: ag ?? agent,
+        agent: ag ?? initialAgent,
         update: setAgent,
         refresh,
         moveTo: (x, y) => moveAgent(simulation.id, ag.id, x, y),

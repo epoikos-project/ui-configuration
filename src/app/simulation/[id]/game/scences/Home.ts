@@ -11,6 +11,7 @@ import { Scene } from "phaser";
 import { SubscribeFunction } from "@/app/hooks/useSubscribe";
 import { AgentMovedMessage } from "@/types/messages/world/AgentMovedMessage";
 import { AgentPlacedMessage } from "@/types/messages/world/AgentPlacedMessage";
+import { AgentDeadMessage } from "@/types/messages/world/AgentDeadMessage";
 import { Msg } from "@nats-io/nats-core";
 import assert from "assert";
 import { SimProps } from "../../app";
@@ -25,7 +26,10 @@ export class Home extends Scene {
   background!: Phaser.GameObjects.Image;
   gameText!: Phaser.GameObjects.Text;
 
+  tick: number = 0;
+
   tilemap!: Phaser.Tilemaps.Tilemap;
+  tilemapLayer!: Phaser.Tilemaps.TilemapLayer;
 
   simulation!: Simulation;
   world!: World;
@@ -112,7 +116,61 @@ export class Home extends Scene {
     });
   }
 
-  createAgent(agent: Pick<Agent, "id" | "name" | "x_coord" | "y_coord">) {
+  agentDeadHandler(message: Msg) {
+    const data = message.json<AgentDeadMessage>();
+    console.log("Agent died:", data.id);
+
+    // Find the agent container using the id from the message (same as move handler)
+    const agentContainer = this.agentContainers.find((a) => a.id === data.id);
+
+    if (!agentContainer) {
+      console.log("Agent container not found for dead agent:", data.id);
+      return;
+    }
+
+    const agentId = agentContainer.id;
+
+    // Check if the agent is currently moving
+    if (this.gridEngine.isMoving(agentId)) {
+      console.log(
+        "Agent is moving, waiting for movement to complete before showing tombstone"
+      );
+      // Wait for movement to finish before changing texture
+      this.gridEngine.movementStopped().subscribe(({ charId }) => {
+        if (charId === agentId) {
+          this.changeAgentToTombstone(agentContainer!, data.name);
+        }
+      });
+    } else {
+      // Agent is not moving, change immediately
+      this.changeAgentToTombstone(agentContainer, data.name);
+    }
+  }
+
+  private changeAgentToTombstone(
+    agentContainer: { id: string; container: Phaser.GameObjects.Container },
+    agentName: string
+  ) {
+    // Get the existing sprite and change its texture to tombstone
+    const container = agentContainer.container;
+    const [sprite] = container.list as [
+      Phaser.GameObjects.Sprite,
+      Phaser.GameObjects.Text
+    ];
+
+    // Change the sprite texture to tombstone
+    sprite.setTexture("tombstone");
+    sprite.clearTint(); // Remove any color tint
+    sprite.name = `${agentName} (Dead)`;
+
+    console.log("Changed agent sprite to tombstone for:", agentContainer.id);
+  }
+
+  createAgent(
+    agent: Pick<Agent, "id" | "name" | "x_coord" | "y_coord"> & {
+      dead?: boolean;
+    }
+  ) {
     const agentSprite = this.createSprite(agent);
     this.agentContainers.push({ id: agent.id, container: agentSprite[1] });
     this.gridEngine.addCharacter({
@@ -170,11 +228,9 @@ export class Home extends Scene {
     found.container.add(dotsText);
     this.agentMessageDots[agentId] = dotsText;
     let frame = 0;
-    const frames = label ? [
-      `${label}.`,
-      `${label}..`,
-      `${label}...`,
-    ] : [".", "..", "..."];
+    const frames = label
+      ? [`${label}.`, `${label}..`, `${label}...`]
+      : [".", "..", "..."];
     const interval = this.time.addEvent({
       delay: 400,
       repeat: 4,
@@ -191,12 +247,25 @@ export class Home extends Scene {
   }
 
   createSprite(
-    agent: Pick<Agent, "id" | "name">
+    agent: Pick<Agent, "id" | "name"> & { dead?: boolean }
   ): [Phaser.GameObjects.Sprite, Phaser.GameObjects.Container] {
-    const agentSprite = this.add.sprite(0, 0, "fluffy");
-    agentSprite.setTint(Phaser.Display.Color.RandomRGB().color);
+    // Choose sprite based on whether agent is dead
+    const spriteKey = agent.dead ? "tombstone" : "fluffy";
+    const agentSprite = this.add.sprite(0, 0, spriteKey);
+
+    // Only apply tint and random color to living agents
+    if (!agent.dead) {
+      // Seed the color with agent.id so it's consistent for each agent
+      const hash = Array.from(agent.id).reduce(
+        (acc, char) => acc + char.charCodeAt(0),
+        0
+      );
+      const color = Phaser.Display.Color.HSVColorWheel()[hash % 360].color;
+      agentSprite.setTint(color);
+    }
+
     agentSprite.setInteractive();
-    agentSprite.name = agent.name;
+    agentSprite.name = agent.dead ? `${agent.name} (Dead)` : agent.name;
     const text: Phaser.GameObjects.Text = this.add
       .text(
         agentSprite.width * 0.5,
@@ -241,6 +310,7 @@ export class Home extends Scene {
   init(data: { props: SimProps; subscribe: SubscribeFunction<Home> }) {
     const { world, agents, simulation, resources } = data.props;
     this.world = world;
+    this.tick = simulation.tick;
     this.simulation = simulation;
     this.agents = agents;
     this.subscribe = data.subscribe;
@@ -305,7 +375,7 @@ export class Home extends Scene {
     assert(wallTileset);
     assert(resourceHarvestedTileset);
 
-    this.tilemap.createLayer(
+    this.tilemapLayer = this.tilemap.createLayer(
       0,
       [tileset, wallTileset, resourceHarvestedTileset],
       0,
@@ -404,6 +474,11 @@ export class Home extends Scene {
       this
     );
     this.subscribe(
+      `simulation.${this.simulation.id}.agent.*.dead`,
+      this.agentDeadHandler,
+      this
+    );
+    this.subscribe(
       `simulation.${this.simulation.id}.resource.*.harvested`,
       this.resourceHarvestedHandler,
       this
@@ -413,6 +488,11 @@ export class Home extends Scene {
       this.resourceGrownHandler,
       this
     );
+    this.subscribe(`simulation.${this.simulation.id}.tick`, (msg: Msg) => {
+      const data: { tick: number } = msg.json();
+      this.tick = data.tick;
+      this.uploadMap();
+    });
     // subscribe to all communication channels to trigger message dots
     // communication -> speaking indicator
     this.subscribe(
@@ -461,5 +541,67 @@ export class Home extends Scene {
   }
   changeScene() {
     this.scene.start("GameOver");
+  }
+
+  async uploadMap() {
+    const width = this.tilemap.widthInPixels;
+    const height = this.tilemap.heightInPixels;
+
+    const rt = this.add.renderTexture(-1000, -1000, width, height);
+
+    // Draw tilemap layer(s)
+    rt.draw(this.tilemapLayer);
+
+    // Draw agents containers
+    this.agentContainers.forEach(({ container }) => {
+      rt.draw(container);
+    });
+
+    rt.snapshot(async (image: HTMLImageElement) => {
+      // Convert image to Blob
+      const response = await fetch(image.src);
+      const blob = await response.blob();
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append(
+        "file",
+        blob,
+        `${this.simulation.id}-map-tick-${this.tick}.png`
+      );
+      formData.append("simulationId", this.simulation.id);
+      formData.append("tick", this.tick.toString());
+      rt.destroy();
+
+      // Upload to your server (replace URL with your endpoint)
+      await fetch("/api/upload-map", {
+        method: "POST",
+        body: formData,
+      });
+    });
+  }
+
+  downloadFullMap() {
+    const width = this.tilemap.widthInPixels;
+    const height = this.tilemap.heightInPixels;
+
+    const rt = this.add.renderTexture(-1000, -1000, width, height);
+
+    // Draw tilemap layer(s)
+    rt.draw(this.tilemapLayer);
+
+    // Draw agents containers
+    this.agentContainers.forEach(({ container }) => {
+      rt.draw(container);
+    });
+
+    rt.snapshot((image: HTMLImageElement) => {
+      const a = document.createElement("a");
+      a.href = image.src;
+      a.download = this.simulation.id + "-map-tick-" + this.tick + ".png";
+      a.click();
+
+      rt.destroy();
+    });
   }
 }
